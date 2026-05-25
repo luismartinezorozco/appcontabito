@@ -121,36 +121,40 @@
             transition: opacity 0.4s ease, transform 0.4s ease;
         }
 
-        /* --- Bottom Navigation Dock --- */
-        #bottom-dock {
-            padding-bottom: calc(env(safe-area-inset-bottom, 20px) + 10px);
-        }
-
-        .nav-item {
-            transition: all 0.3s ease;
-            position: relative;
-        }
-        
-        .nav-item.active {
-            color: #ffffff;
-            transform: translateY(-4px);
-        }
-        
-        .nav-item.active::after {
-            content: '';
-            position: absolute;
-            bottom: -6px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 4px;
-            height: 4px;
-            background-color: #ffffff;
+        /* --- Floating Back Button --- */
+        #floating-back {
+            position: fixed;
+            top: max(env(safe-area-inset-top, 40px), 20px);
+            margin-top: 10px;
+            left: 15px;
+            z-index: 60;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            box-shadow: 0 0 8px 2px rgba(255,255,255,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            opacity: 0;
+            pointer-events: none;
+            transform: translateX(-20px);
+            /* Liquid Glass Effect */
+            background: rgba(25, 25, 30, 0.5);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
-        .nav-item:not(.active) {
-            color: rgba(255, 255, 255, 0.4);
+        #floating-back.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateX(0);
+        }
+
+        #floating-back:active {
+            transform: scale(0.9) translateX(0);
+            background: rgba(40, 40, 45, 0.7);
         }
     </style>
 </head>
@@ -229,7 +233,7 @@
         </div>
     </main>
 
-    <!-- WEB CONTENT CONTAINER (Replaces the old "Back" bar system) -->
+    <!-- WEB CONTENT CONTAINER -->
     <div id="iframe-container" class="fixed inset-0 z-20 w-full h-full bg-[#000000]">
         
         <!-- Glass Loader -->
@@ -240,72 +244,29 @@
             </div>
         </div>
         
-        <!-- iframe uses full screen, but we add padding at bottom so dock doesn't cover content -->
-        <iframe id="app-frame" class="w-full h-full border-none pb-[90px]" src="about:blank"></iframe>
+        <!-- iframe uses completely full screen, removed padding bottom -->
+        <iframe id="app-frame" class="w-full h-full border-none" src="about:blank"></iframe>
     </div>
 
-    <!-- FLOATING LIQUID GLASS DOCK (Always visible) -->
-    <nav id="bottom-dock" class="fixed bottom-0 w-full z-50 flex justify-center pointer-events-none">
-        <div class="glass-panel px-6 py-4 rounded-[2rem] flex items-center gap-8 pointer-events-auto mb-2 mx-4 max-w-sm w-full justify-between">
-            
-            <!-- Tab: Home -->
-            <button onclick="goHome()" id="tab-home" class="nav-item active flex flex-col items-center gap-1">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
-                </svg>
-            </button>
-
-            <!-- Tab: Contabito -->
-            <button onclick="openApp('https://contabito.vercel.app', 'tab-contabito')" id="tab-contabito" class="nav-item flex flex-col items-center gap-1 text-blue-400">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                </svg>
-            </button>
-
-            <!-- Tab: Factubito -->
-            <button onclick="openApp('https://nodianvip.vercel.app', 'tab-factubito')" id="tab-factubito" class="nav-item flex flex-col items-center gap-1 text-purple-400">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-            </button>
-
-            <!-- Tab: RR-HH -->
-            <button onclick="openApp('https://rr-hh-eqbbito.vercel.app/', 'tab-rrhh')" id="tab-rrhh" class="nav-item flex flex-col items-center gap-1 text-emerald-400">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-            </button>
-
-        </div>
-    </nav>
+    <!-- FLOATING BACK BUTTON (Replaces Bottom Dock) -->
+    <button onclick="goHome()" id="floating-back" aria-label="Volver al inicio">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+        </svg>
+    </button>
 
     <script>
         const iframeContainer = document.getElementById('iframe-container');
         const appFrame = document.getElementById('app-frame');
         const hubView = document.getElementById('hub-view');
         const loadingIndicator = document.getElementById('loading-indicator');
-        
-        const navItems = {
-            'tab-home': document.getElementById('tab-home'),
-            'tab-contabito': document.getElementById('tab-contabito'),
-            'tab-factubito': document.getElementById('tab-factubito'),
-            'tab-rrhh': document.getElementById('tab-rrhh')
-        };
+        const floatingBack = document.getElementById('floating-back');
 
         // Ocultar loader cuando el iframe termine de cargar
         appFrame.addEventListener('load', hideLoading);
 
-        function updateDock(activeTabId) {
-            // Remover clase active de todos
-            Object.values(navItems).forEach(item => item.classList.remove('active'));
-            // Añadir clase active al seleccionado
-            navItems[activeTabId].classList.add('active');
-        }
-
         function openApp(url, tabId) {
-            updateDock(tabId);
-
-            // Solo mostrar pantalla de carga si estamos cambiando a una URL nueva
+            // Mostrar pantalla de carga
             if(appFrame.src !== url) {
                 loadingIndicator.style.opacity = '1';
                 loadingIndicator.style.pointerEvents = 'auto';
@@ -316,8 +277,9 @@
             hubView.style.transform = 'scale(0.9)';
             hubView.style.opacity = '0';
             
-            // Mostrar Iframe
+            // Mostrar Iframe y Botón de Retroceso Flotante
             iframeContainer.classList.add('active');
+            floatingBack.classList.add('active');
         }
 
         function hideLoading() {
@@ -330,14 +292,18 @@
         }
 
         function goHome() {
-            updateDock('tab-home');
-            
-            // Ocultar iframe
+            // Ocultar iframe y botón flotante
             iframeContainer.classList.remove('active');
+            floatingBack.classList.remove('active');
             
             // Traer de vuelta el fondo
             hubView.style.transform = 'scale(1)';
             hubView.style.opacity = '1';
+            
+            // Limpiar la URL después de la animación para ahorrar recursos en el teléfono
+            setTimeout(() => {
+                appFrame.src = 'about:blank';
+            }, 400);
         }
     </script>
 
