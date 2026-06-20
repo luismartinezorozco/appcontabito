@@ -106,41 +106,19 @@
             transform: translateZ(0);
         }
 
-        /* --- Botón Flotante Neumórfico --- */
-        #floating-back {
+        /* --- Zona de Detección de Gestos (Edge Swipe) --- */
+        #swipe-edge {
             position: fixed;
-            top: max(env(safe-area-inset-top, 40px), 20px);
-            margin-top: 10px;
-            left: 20px;
+            top: 0;
+            left: 0;
+            width: 20px;
+            height: 100%;
             z-index: 60;
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-            opacity: 0;
             pointer-events: none;
-            transform: translateX(-20px) translateZ(0);
-            /* Estilo Neumórfico Oscuro para contrastar con las apps */
-            background: #151625;
-            box-shadow: 4px 4px 10px rgba(0,0,0,0.3), -2px -2px 8px rgba(255,255,255,0.1);
-            color: #ffffff;
-            /* Optimización Táctil */
-            touch-action: manipulation;
-            will-change: transform, opacity;
         }
 
-        #floating-back.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: translateX(0) translateZ(0);
-        }
-
-        #floating-back:active {
-            transform: scale(0.9) translateX(0) translateZ(0);
-            box-shadow: inset 4px 4px 8px rgba(0,0,0,0.5), inset -2px -2px 6px rgba(255,255,255,0.05);
+        #swipe-edge.active {
+            pointer-events: auto; /* Solo activo cuando el iframe está abierto */
         }
 
         /* Degradados para Iconos */
@@ -272,19 +250,15 @@
         <iframe id="app-frame" class="w-full h-full border-none bg-white" src="about:blank"></iframe>
     </div>
 
-    <!-- BOTÓN FLOTANTE DE RETROCESO (Arriba a la Izquierda) -->
-    <button onclick="goHome()" id="floating-back" aria-label="Cerrar y volver al inicio">
-        <svg class="w-6 h-6 ml-[-2px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"></path>
-        </svg>
-    </button>
+    <!-- ZONA DE DETECCIÓN DE GESTO (Edge Swipe) -->
+    <div id="swipe-edge" aria-hidden="true"></div>
 
     <script>
         const iframeContainer = document.getElementById('iframe-container');
         const appFrame = document.getElementById('app-frame');
         const hubView = document.getElementById('hub-view');
         const loadingIndicator = document.getElementById('loading-indicator');
-        const floatingBack = document.getElementById('floating-back');
+        const swipeEdge = document.getElementById('swipe-edge');
 
         // Escuchar cuando el iframe termine de cargar
         appFrame.addEventListener('load', hideLoading);
@@ -301,11 +275,10 @@
             hubView.style.transform = 'scale(0.92)';
             hubView.style.opacity = '0';
             
-            // Mostrar Contenedor Iframe y el botón flotante
+            // Mostrar Contenedor Iframe y activar zona de gestos
+            iframeContainer.style.transform = ''; // Limpiar transform inline
             iframeContainer.classList.add('active');
-            setTimeout(() => {
-                floatingBack.classList.add('active');
-            }, 300); // Retraso ligero para el botón de retroceso
+            swipeEdge.classList.add('active');
         }
 
         function hideLoading() {
@@ -318,9 +291,10 @@
         }
 
         function goHome() {
-            // Ocultar iframe y botón
+            // Ocultar iframe y desactivar gestos
+            iframeContainer.style.transform = ''; // Limpiar transform inline
             iframeContainer.classList.remove('active');
-            floatingBack.classList.remove('active');
+            swipeEdge.classList.remove('active');
             
             // Restaurar menú principal
             hubView.style.transform = 'scale(1)';
@@ -333,6 +307,41 @@
                 loadingIndicator.style.opacity = '1';
             }, 400);
         }
+
+        // --- Lógica de Gestos (Edge Swipe de iOS) ---
+        let touchStartX = 0;
+
+        swipeEdge.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, {passive: true});
+
+        swipeEdge.addEventListener('touchmove', (e) => {
+            let currentX = e.changedTouches[0].screenX;
+            let deltaX = currentX - touchStartX;
+            
+            // Solo animar si desliza hacia la derecha
+            if (deltaX > 0) {
+                // Sigue el dedo, desactivando la transición CSS temporalmente para que sea fluido
+                iframeContainer.style.transition = 'none';
+                iframeContainer.style.transform = `translateX(${deltaX}px) scale(1) translateZ(0)`;
+            }
+        }, {passive: true});
+
+        swipeEdge.addEventListener('touchend', (e) => {
+            let touchEndX = e.changedTouches[0].screenX;
+            let deltaX = touchEndX - touchStartX;
+            
+            // Restaurar la transición CSS
+            iframeContainer.style.transition = ''; 
+
+            if (deltaX > 70) { 
+                // Swipe exitoso (deslizó más de 70px): volver al menú
+                goHome();
+            } else {
+                // Swipe cancelado: devolver la app a su posición normal a pantalla completa
+                iframeContainer.style.transform = ''; 
+            }
+        });
     </script>
 
 </body>
