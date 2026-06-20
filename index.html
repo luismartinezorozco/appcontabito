@@ -132,7 +132,7 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 20px;
+            width: 12px; /* Reducido de 20px a 12px para no bloquear menús táctiles de las apps */
             height: 100%;
             z-index: 60;
             pointer-events: none;
@@ -187,8 +187,9 @@
         <section class="bg-light-bottom w-full px-6 pt-4 pb-20 flex-1">
             <div class="max-w-xs mx-auto grid grid-cols-2 gap-x-8 gap-y-8">
                 
-                <!-- App 1: Calendario (Antes Contabilidad) -->
-                <button onclick="openApp('https://calendario-wine-three.vercel.app')" class="neo-btn">
+                <!-- App 1: Calendario -->
+                <!-- URL actualizada con "/" al final para evitar redirecciones de seguridad de Vercel -->
+                <button onclick="openApp('https://calendario-wine-three.vercel.app/')" class="neo-btn">
                     <div class="neo-icon-wrapper">
                         <!-- Icono Calendario -->
                         <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
@@ -249,8 +250,8 @@
             </div>
         </div>
         
-        <!-- El Iframe se renderiza debajo del Notch del iPhone gracias al padding-top del contenedor -->
-        <iframe id="app-frame" src="about:blank"></iframe>
+        <!-- El Iframe se renderiza debajo del Notch del iPhone. Añadidos permisos de portapapeles y fullscreen -->
+        <iframe id="app-frame" src="about:blank" allow="clipboard-read; clipboard-write; camera; geolocation" allowfullscreen></iframe>
     </div>
 
     <!-- ZONA DE DETECCIÓN DE GESTO (Edge Swipe Left) -->
@@ -270,6 +271,10 @@
                 loadingIndicator.style.opacity = '1';
                 loadingIndicator.style.pointerEvents = 'auto';
                 appFrame.src = url;
+                
+                // SEGURO DE VIDA: Si es una app de Vercel/React, a veces el evento de carga no se dispara. 
+                // Esto fuerza a ocultar la pantalla de "Conectando..." tras 3.5 segundos sí o sí.
+                setTimeout(hideLoading, 3500);
             }
             
             hubView.style.transform = 'scale(0.92)';
