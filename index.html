@@ -10,7 +10,7 @@
     <!-- Usamos black-translucent para poder manipular el notch con CSS -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Contabito">
-    <meta name="theme-color" content="#131420">
+    <meta name="theme-color" content="#0A0A0B">
     
     <!-- Icons -->
     <link rel="icon" type="image/png" href="https://res.cloudinary.com/dkufuo5wc/image/upload/v1778780323/ChatGPT_Image_14_may_2026_12_37_19_p.m._wye8gt.png">
@@ -25,7 +25,7 @@
     <style>
         body {
             font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #E8EEF2; /* Color base claro */
+            background-color: #0A0A0B; /* Fondo oscuro principal */
             margin: 0;
             overflow: hidden; 
             user-select: none;
@@ -34,42 +34,42 @@
             overscroll-behavior-y: none;
         }
 
-        /* --- Colores y Fondos --- */
+        /* --- Colores y Fondos (Dark Theme EQB) --- */
         .bg-dark-top {
-            background: linear-gradient(135deg, #1A1B2F 0%, #11121F 100%);
+            background: linear-gradient(135deg, #1A1A1A 0%, #050505 100%);
             /* Respetar el safe area del notch para el logo principal */
             padding-top: calc(env(safe-area-inset-top) + 2rem);
         }
 
         .bg-light-bottom {
-            background-color: #E8EEF2;
+            background-color: #0A0A0B;
         }
 
         /* --- Neumorphism Dark (Top Section) --- */
         .neo-dark {
-            background: #151625;
-            box-shadow: 8px 8px 16px #0d0e17, -8px -8px 16px #1d1e33;
+            background: #0A0A0B;
+            box-shadow: 8px 8px 16px #040404, -8px -8px 16px #101012;
             border-radius: 2rem;
         }
 
-        /* --- Neumorphism Light (Buttons) --- */
+        /* --- Neumorphism Dark (Buttons) --- */
         .neo-btn {
-            background: #E8EEF2;
+            background: #111112;
             border-radius: 28px;
-            /* Sombra suave y realista */
-            box-shadow: 9px 9px 16px rgb(200, 208, 220), -9px -9px 16px rgb(255, 255, 255);
+            /* Sombra oscura mate */
+            box-shadow: 7px 7px 14px #050505, -7px -7px 14px #1d1d1f;
             transition: all 0.2s cubic-bezier(0.5, 1, 0.89, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             padding: 20px 10px;
-            border: 1px solid rgba(255,255,255,0.4);
+            border: 1px solid rgba(255, 85, 0, 0.08); /* Borde sutil naranja EQB */
             touch-action: manipulation; /* Remueve delay de 300ms en iOS */
         }
 
         .neo-btn:active {
-            box-shadow: inset 6px 6px 12px rgb(200, 208, 220), inset -6px -6px 12px rgb(255, 255, 255);
+            box-shadow: inset 5px 5px 10px #050505, inset -5px -5px 10px #1d1d1f;
             transform: scale(0.95);
         }
 
@@ -81,8 +81,8 @@
             align-items: center;
             justify-content: center;
             border-radius: 50%;
-            background: #E8EEF2;
-            box-shadow: inset 4px 4px 8px rgb(200, 208, 220), inset -4px -4px 8px rgb(255, 255, 255);
+            background: #0A0A0B;
+            box-shadow: inset 4px 4px 8px #040404, inset -4px -4px 8px #101012;
         }
 
         /* --- Transiciones y Iframe --- */
@@ -92,7 +92,7 @@
              * Empuja todo el contenido hacia abajo respetando la cámara del iPhone.
              */
             padding-top: env(safe-area-inset-top);
-            background-color: #E8EEF2; /* Fondo para que la barra de estado se vea limpia */
+            background-color: #000000; /* Negro puro para la barra de estado al abrir app */
             
             transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
             opacity: 0;
@@ -149,31 +149,20 @@
     <!-- SOLUCIÓN: Definición de Gradientes SVG (position absolute w-0 h-0 para que Chrome/Safari no los rompa) -->
     <svg class="absolute w-0 h-0 pointer-events-none" aria-hidden="true" style="position: absolute; width: 0; height: 0;">
         <defs>
-            <linearGradient id="grad-blue" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#60A5FA" />
-                <stop offset="100%" stop-color="#2563EB" />
-            </linearGradient>
-            <linearGradient id="grad-purple" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#C084FC" />
-                <stop offset="100%" stop-color="#7E22CE" />
-            </linearGradient>
-            <linearGradient id="grad-emerald" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#34D399" />
-                <stop offset="100%" stop-color="#059669" />
-            </linearGradient>
-            <linearGradient id="grad-orange" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FBBF24" />
-                <stop offset="100%" stop-color="#D97706" />
+            <!-- Degradado Naranja Vibrante estilo EQB STUDIO -->
+            <linearGradient id="grad-eqb" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#FF7A00" />
+                <stop offset="100%" stop-color="#FF3D00" />
             </linearGradient>
         </defs>
     </svg>
 
-    <!-- HUB VIEW PRINCIPAL -->
-    <main id="hub-view" class="w-full h-full flex flex-col z-10 relative">
+    <!-- HUB VIEW PRINCIPAL (Ahora fluye todo junto en un solo scroll) -->
+    <main id="hub-view" class="w-full h-full overflow-y-auto relative z-10 flex flex-col" style="-webkit-overflow-scrolling: touch;">
         
         <!-- SECCIÓN SUPERIOR OSCURA -->
-        <section class="bg-dark-top w-full pb-20 relative flex-shrink-0" style="height: 42%;">
-            <div class="max-w-md mx-auto px-6 flex flex-col items-center justify-center h-full relative z-10">
+        <section class="bg-dark-top w-full pt-10 pb-24 relative flex flex-col items-center justify-center min-h-[45vh] shrink-0">
+            <div class="relative z-10 flex flex-col items-center">
                 
                 <!-- Logo Neumórfico Oscuro -->
                 <div class="neo-dark w-28 h-28 p-2 flex items-center justify-center mb-5">
@@ -183,63 +172,63 @@
                 </div>
 
                 <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">Contabito</h1>
-                <p class="text-sm font-semibold text-gray-400">Ecosistema Empresarial</p>
+                <p class="text-sm font-semibold text-orange-500">Ecosistema Empresarial</p>
             </div>
 
-            <!-- ONDA SEPARADORA -->
-            <div class="absolute bottom-[-1px] left-0 w-full overflow-hidden leading-none z-0">
-                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-16 sm:h-20" style="transform: rotateY(180deg);">
-                    <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.5,193.36,99.21,239.52,84.18,280.9,71.21,321.39,56.44Z" fill="#E8EEF2"></path>
+            <!-- ONDA SEPARADORA (Ajustada para que NUNCA corte los botones) -->
+            <div class="absolute bottom-[-2px] left-0 w-full leading-none z-0 pointer-events-none">
+                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-16 sm:h-24" style="transform: rotateY(180deg);">
+                    <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.5,193.36,99.21,239.52,84.18,280.9,71.21,321.39,56.44Z" fill="#0A0A0B"></path>
                 </svg>
             </div>
         </section>
 
         <!-- SECCIÓN INFERIOR CLARA (Cuadrícula de Apps) -->
-        <section class="flex-1 bg-light-bottom w-full px-6 pt-6 pb-12 overflow-y-auto" style="-webkit-overflow-scrolling: touch;">
-            <div class="max-w-xs mx-auto grid grid-cols-2 gap-x-8 gap-y-8 mt-2">
+        <section class="bg-light-bottom w-full px-6 pt-4 pb-20 flex-1">
+            <div class="max-w-xs mx-auto grid grid-cols-2 gap-x-8 gap-y-8">
                 
                 <!-- App 1: Contabilidad -->
                 <button onclick="openApp('https://contabito.vercel.app')" class="neo-btn">
                     <div class="neo-icon-wrapper">
                         <!-- Icono Libro -->
-                        <svg class="w-8 h-8 drop-shadow-md" viewBox="0 0 24 24" fill="url(#grad-blue)">
+                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
                             <path d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c1.66 0 3.218.51 4.5 1.385a.75.75 0 001-.707V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
                         </svg>
                     </div>
-                    <span class="text-[13px] font-bold text-gray-700">Contabilidad</span>
+                    <span class="text-[13px] font-bold text-gray-200">Contabilidad</span>
                 </button>
 
                 <!-- App 2: Facturación -->
                 <button onclick="openApp('https://nodianvip.vercel.app')" class="neo-btn">
                     <div class="neo-icon-wrapper">
                         <!-- Icono Factura -->
-                        <svg class="w-8 h-8 drop-shadow-md" viewBox="0 0 24 24" fill="url(#grad-purple)">
+                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
                             <path fill-rule="evenodd" d="M2.25 4.125c0-1.036.84-1.875 1.875-1.875h5.25c1.036 0 1.875.84 1.875 1.875V17.25a4.5 4.5 0 11-9 0V4.125zm4.5 3.375a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm6.75-6.75a.75.75 0 01.75-.75h5.25a.75.75 0 010 1.5h-5.25a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5h5.25a.75.75 0 000-1.5h-5.25z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <span class="text-[13px] font-bold text-gray-700">Facturación</span>
+                    <span class="text-[13px] font-bold text-gray-200">Facturación</span>
                 </button>
 
                 <!-- App 3: RR-HH -->
                 <button onclick="openApp('https://rr-hh-eqbbito.vercel.app/')" class="neo-btn">
                     <div class="neo-icon-wrapper">
                         <!-- Icono Usuarios -->
-                        <svg class="w-8 h-8 drop-shadow-md" viewBox="0 0 24 24" fill="url(#grad-emerald)">
+                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
                             <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
                         </svg>
                     </div>
-                    <span class="text-[13px] font-bold text-gray-700">RR-HH</span>
+                    <span class="text-[13px] font-bold text-gray-200">RR-HH</span>
                 </button>
 
                 <!-- App 4: Bodega digital -->
                 <button onclick="openApp('https://eqbito.vercel.app')" class="neo-btn">
                     <div class="neo-icon-wrapper">
                         <!-- Icono Cubo -->
-                        <svg class="w-8 h-8 drop-shadow-md" viewBox="0 0 24 24" fill="url(#grad-orange)">
+                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.6)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
                             <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z" />
                         </svg>
                     </div>
-                    <span class="text-[13px] font-bold text-gray-700 text-center leading-tight">Bodega digital</span>
+                    <span class="text-[13px] font-bold text-gray-200 text-center leading-tight">Bodega digital</span>
                 </button>
 
             </div>
@@ -249,14 +238,14 @@
     <!-- CONTENEDOR DE LA WEB (Con Safe Area implementado) -->
     <div id="iframe-container" class="fixed inset-0 z-20 w-full h-full">
         
-        <!-- Pantalla de Carga -->
-        <div id="loading-indicator" class="absolute inset-0 flex items-center justify-center bg-light-bottom z-30 transition-opacity duration-500">
-            <div class="neo-btn !rounded-2xl p-6 flex flex-col items-center gap-4 border-none">
-                <svg class="animate-spin h-10 w-10 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <!-- Pantalla de Carga Oscura -->
+        <div id="loading-indicator" class="absolute inset-0 flex items-center justify-center bg-[#0A0A0B] z-30 transition-opacity duration-500">
+            <div class="neo-btn !rounded-2xl p-6 flex flex-col items-center gap-4 border border-orange-500/20">
+                <svg class="animate-spin h-10 w-10 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span class="text-gray-600 text-sm font-bold tracking-wide">Conectando...</span>
+                <span class="text-gray-300 text-sm font-bold tracking-wide">Conectando...</span>
             </div>
         </div>
         
