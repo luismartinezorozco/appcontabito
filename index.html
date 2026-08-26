@@ -3,959 +3,753 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>HR Events V2</title>
+    <title>HR Events - Portal Administrativo</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #0d4e46; }
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Toast animation classes */
-        .toast-enter { transform: translateY(-100%); opacity: 0; }
-        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-        .toast-exit { opacity: 1; }
-        .toast-exit-active { opacity: 0; transition: all 0.3s ease-out; }
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        dark: '#0d4e46',
-                        light: '#146459',
-                        mint: '#7be4af',
-                        minthover: '#66d19c'
-                    },
-                    borderRadius: {
-                        '4xl': '2rem'
-                    }
-                }
-            }
-        }
-    </script>
 </head>
-<body class="text-gray-800 antialiased overflow-hidden h-[100dvh] flex flex-col relative">
-    
-    <div id="toast-container" class="fixed top-4 right-4 left-4 md:left-auto md:w-80 z-[100] flex flex-col gap-2 pointer-events-none"></div>
-    
-    <div id="app" class="h-full w-full"></div>
+<body class="bg-[#0d4e46] text-gray-800 h-screen w-full overflow-hidden flex flex-col relative">
 
-    <!-- Modals Containers -->
-    <div id="modal-container" class="relative z-[60]"></div>
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden transition-all duration-300">
+        <div id="toast-content" class="bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+            <i id="toast-icon" class="fas fa-check-circle text-[#7be4af]"></i>
+            <span id="toast-message" class="font-medium text-sm">Mensaje</span>
+        </div>
+    </div>
 
-    <script>
-        const STORAGE_KEY = 'hr_v2_data';
-        const SESSION_KEY = 'hr_v2_session';
+    <!-- PANTALLA DE LOGIN -->
+    <div id="login-view" class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0d4e46] p-4">
+        <div class="text-center mb-8">
+            <div class="bg-[#7be4af] text-[#0d4e46] w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
+                <i class="fas fa-id-badge"></i>
+            </div>
+            <h1 class="text-4xl font-bold text-white mb-2">HR Events</h1>
+            <p class="text-[#7be4af]">Sistema centralizado de talento y rendimiento.</p>
+        </div>
+        <div class="glass-card w-full max-w-sm rounded-3xl p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold text-center text-[#0d4e46] mb-6">Iniciar Sesión</h2>
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-6">
+                    <label class="block text-sm font-semibold text-gray-600 mb-2">Cédula o Documento</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="number" id="login-doc" required placeholder="1007117953" class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#146459] focus:ring-2 focus:ring-[#7be4af] transition-all bg-gray-50">
+                    </div>
+                </div>
+                <button type="submit" id="login-btn" class="w-full bg-[#7be4af] hover:bg-[#5ac992] text-[#0d4e46] font-bold py-3 rounded-xl transition-all shadow-md">
+                    Ingresar al Sistema
+                </button>
+            </form>
+        </div>
+    </div>
 
-        const appState = {
-            currentUser: null,
-            currentView: 'login', // login, dashboard, workers, profile, ranking
-            viewParams: {},
-            selectedMonth: getCurrentMonthStr(),
-            data: {
-                workers: [],
-                points: [],
-                documents: []
-            },
-            formSpecialties: []
+    <!-- APLICACIÓN PRINCIPAL -->
+    <div id="app-view" class="hidden h-full w-full flex flex-col md:flex-row bg-gray-50">
+        
+        <!-- NAVEGACIÓN -->
+        <nav class="bg-[#146459] text-white w-full md:w-64 md:flex-shrink-0 flex md:flex-col justify-around md:justify-start p-2 md:p-6 shadow-xl z-20 order-2 md:order-1 fixed bottom-0 md:relative h-16 md:h-full">
+            <div class="hidden md:block mb-10 text-center">
+                <h2 class="text-2xl font-bold text-[#7be4af]">HR Events</h2>
+                <p class="text-xs opacity-75 mt-1" id="user-role-display">Administrador</p>
+            </div>
+            
+            <div class="flex md:flex-col w-full md:w-auto justify-around md:justify-start gap-1 md:gap-4 overflow-x-auto hide-scroll" id="nav-links">
+                <!-- Inyectados por JS -->
+            </div>
+
+            <div class="hidden md:block mt-auto">
+                <button onclick="logout()" class="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </nav>
+
+        <!-- CONTENIDO -->
+        <main class="flex-1 overflow-y-auto order-1 md:order-2 pb-20 md:pb-0 relative" id="main-content">
+            <!-- Vistas JS -->
+        </main>
+    </div>
+
+    <!-- MODAL FORMULARIO TRABAJADOR -->
+    <div id="worker-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end md:justify-center items-center">
+        <div class="bg-white w-full md:w-2/3 max-w-2xl rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-[#0d4e46] text-white md:rounded-t-3xl rounded-t-3xl">
+                <h3 id="worker-modal-title" class="text-xl font-bold">Nuevo Trabajador</h3>
+                <button onclick="closeWorkerModal()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form id="worker-form" class="space-y-6">
+                    <input type="hidden" id="w-id">
+                    
+                    <div class="flex flex-col items-center mb-6">
+                        <div class="relative w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden mb-2">
+                            <img id="w-photo-preview" src="" class="w-full h-full object-cover hidden">
+                            <i id="w-photo-icon" class="fas fa-camera text-gray-400 text-2xl"></i>
+                        </div>
+                        <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-[#0d4e46] text-xs font-bold py-1 px-3 rounded-full transition-all">
+                            Subir Foto
+                            <input type="file" id="w-photo-input" accept="image/jpeg, image/png" class="hidden" onchange="handlePhotoUpload(event)">
+                        </label>
+                        <input type="hidden" id="w-photo-base64">
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Personal</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-500 font-bold">Nombre Completo</label><input type="text" id="w-name" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div><label class="text-xs text-gray-500 font-bold">Documento</label><input type="number" id="w-doc" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div><label class="text-xs text-gray-500 font-bold">Teléfono/WhatsApp</label><input type="number" id="w-phone" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div><label class="text-xs text-gray-500 font-bold">Ciudad</label><input type="text" id="w-city" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Laboral</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs text-gray-500 font-bold">Rol/Cargo</label>
+                                <select id="w-role" class="w-full p-2 border rounded-lg bg-gray-50">
+                                    <option value="WORKER">Trabajador</option>
+                                    <option value="COORD">Coordinador</option>
+                                    <option value="HR">Recursos Humanos</option>
+                                    <option value="ADMIN">Administrador</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-xs text-gray-500 font-bold">Estado</label>
+                                <select id="w-status" class="w-full p-2 border rounded-lg bg-gray-50">
+                                    <option value="activo">Activo</option>
+                                    <option value="inactivo">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="text-xs text-gray-500 font-bold">Disponibilidad Semanal (Días y Horarios)</label>
+                                <input type="text" id="w-availability" placeholder="Ej: Lunes a Viernes (Tardes), Sábados todo el día" class="w-full p-2 border rounded-lg bg-gray-50">
+                            </div>
+                            <div class="md:col-span-2">
+                                <label class="text-xs text-gray-500 font-bold">Especialidades (Ej: Animador, DJ)</label>
+                                <input type="text" id="w-specs" placeholder="Separadas por coma" class="w-full p-2 border rounded-lg bg-gray-50">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="bank-section-form" class="hidden">
+                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Bancaria</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="text-xs text-gray-500 font-bold">Banco</label><input type="text" id="w-bank-name" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div>
+                                <label class="text-xs text-gray-500 font-bold">Tipo de Cuenta</label>
+                                <select id="w-bank-type" class="w-full p-2 border rounded-lg bg-gray-50">
+                                    <option value="Ahorros">Ahorros</option>
+                                    <option value="Corriente">Corriente</option>
+                                    <option value="Nequi/Daviplata">Nequi / Daviplata</option>
+                                </select>
+                            </div>
+                            <div><label class="text-xs text-gray-500 font-bold">Número de Cuenta</label><input type="number" id="w-bank-num" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div><label class="text-xs text-gray-500 font-bold">Titular</label><input type="text" id="w-bank-owner" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-3xl flex justify-end gap-3">
+                <button onclick="closeWorkerModal()" class="px-5 py-2 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition-all">Cancelar</button>
+                <button onclick="saveWorker()" id="save-worker-btn" class="px-5 py-2 rounded-xl font-bold bg-[#7be4af] text-[#0d4e46] hover:bg-[#5ac992] shadow-md transition-all">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE & CORE JAVASCRIPT -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, setDoc, doc, query, where, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyB4N-DtD-dPaF4r2TIU2Vsk8nlEHtEnAss",
+            authDomain: "recursoslaly.firebaseapp.com",
+            projectId: "recursoslaly",
+            storageBucket: "recursoslaly.firebasestorage.app",
+            messagingSenderId: "49889283141",
+            appId: "1:49889283141:web:9cc349b9d814855f07a72c"
         };
 
-        const specialtiesList = ["Animador", "Recreacionista", "Personajes", "DJ", "Fotografía", "Video", "Logística", "Montaje", "Coordinación", "Pintucaritas"];
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        // Utilities
-        function getTodayStr() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        // ESTADO GLOBAL
+        window.appState = {
+            currentUser: null,
+            currentView: 'dashboard',
+            selectedWorker: null,
+            dbWorkers: [],
+            currentProfilePoints: [],
+            currentProfileDocs: []
+        };
+
+        window.onload = async () => {
+            await checkSession();
+        };
+
+        async function fetchAllWorkers() {
+            try {
+                const querySnapshot = await getDocs(collection(db, "workers"));
+                window.appState.dbWorkers = querySnapshot.docs.map(doc => doc.data());
+            } catch (error) {
+                console.error(error);
+            }
         }
 
-        function getCurrentMonthStr() {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        }
-
-        function generateId() {
-            return Math.random().toString(36).substring(2, 15);
-        }
-
-        function showToast(msg, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 toast-enter ${type === 'success' ? 'bg-mint text-dark' : 'bg-red-500'}`;
-            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-5 h-5"></i> ${msg}`;
-            container.appendChild(toast);
-            if(window.lucide) window.lucide.createIcons({root: toast});
-            
-            requestAnimationFrame(() => {
-                toast.classList.remove('toast-enter');
-                toast.classList.add('toast-enter-active');
-            });
-            
-            setTimeout(() => {
-                toast.classList.remove('toast-enter-active');
-                toast.classList.add('toast-exit', 'toast-exit-active');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function copyText(text) {
-            if (navigator.clipboard && window.isSecureContext) {
-                navigator.clipboard.writeText(text).then(() => showToast('Copiado al portapapeles'));
-            } else {
-                const textArea = document.createElement("textarea");
-                textArea.value = text;
-                textArea.style.position = "fixed";
-                textArea.style.opacity = "0";
-                document.body.appendChild(textArea);
-                textArea.focus();
-                textArea.select();
-                try {
-                    document.execCommand('copy');
-                    showToast('Copiado al portapapeles');
-                } catch (err) {
-                    showToast('Error al copiar', 'error');
+        async function checkSession() {
+            try {
+                const session = sessionStorage.getItem('hr_v2_session');
+                if (session) {
+                    window.appState.currentUser = JSON.parse(session);
+                    await fetchAllWorkers(); 
+                    window.showApp();
                 }
-                document.body.removeChild(textArea);
-            }
+            } catch(e) {}
         }
 
-        function loadData() {
-            const raw = localStorage.getItem(STORAGE_KEY);
-            if (raw) {
-                appState.data = JSON.parse(raw);
-            }
-            
-            // Auto-seed Admin if missing
-            if (!appState.data.workers.some(w => w.role === 'ADMIN')) {
-                appState.data.workers.push({
-                    id: 'admin_master',
-                    name: 'Administrador Principal',
-                    idNumber: '123456',
-                    role: 'ADMIN',
-                    status: 'active',
-                    phone: '3000000000',
-                    email: '',
-                    city: 'Central',
-                    address: '',
-                    emergencyContact: '',
-                    emergencyPhone: '',
-                    jobRole: 'Director',
-                    specialties: [],
-                    availabilityText: 'Siempre disponible',
-                    bank: { bankName: '', type: '', number: '', owner: '' },
-                    photo: '',
-                    joinDate: getTodayStr()
-                });
-                saveData();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.data));
-        }
-
-        function loadSession() {
-            const raw = sessionStorage.getItem(SESSION_KEY);
-            if (raw) {
-                const session = JSON.parse(raw);
-                const user = appState.data.workers.find(w => w.id === session.id);
-                if (user) {
-                    appState.currentUser = user;
-                    
-                    // Restrict worker navigation on reload
-                    if (user.role === 'WORKER') {
-                        appState.currentView = 'profile';
-                        appState.viewParams = { workerId: user.id, activeTab: 'rendimiento' };
-                    } else {
-                        appState.currentView = 'dashboard';
-                    }
-                }
-            }
-        }
-
-        window.login = (e) => {
+        // LOGIN Y FAILSAFE
+        window.handleLogin = async (e) => {
             e.preventDefault();
-            const cedula = document.getElementById('l-cedula').value.trim();
-            if (!cedula) return showToast('Ingresa tu cédula', 'error');
-
-            const user = appState.data.workers.find(w => w.idNumber === cedula);
-            if (!user) {
-                return showToast('Credenciales incorrectas o usuario no encontrado', 'error');
-            }
-            if (user.status !== 'active') {
-                return showToast('Usuario inactivo. Contacta a administración.', 'error');
-            }
-
-            appState.currentUser = user;
-            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: user.id }));
+            const docInput = document.getElementById('login-doc').value.trim();
+            const btn = document.getElementById('login-btn');
             
-            if (user.role === 'WORKER') {
-                setView('profile', { workerId: user.id, activeTab: 'rendimiento' });
-            } else {
-                setView('dashboard');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+            btn.disabled = true;
+
+            try {
+                if (docInput === '1007117953') {
+                    const adminData = { id: 'admin_1007117953', document: '1007117953', name: 'Administrador Principal', role: 'ADMIN', status: 'activo', phone: '3000000000', photo: '', availabilityText: 'Siempre disponible' };
+                    await setDoc(doc(db, "workers", "admin_1007117953"), adminData, { merge: true });
+                    
+                    window.appState.currentUser = adminData;
+                    sessionStorage.setItem('hr_v2_session', JSON.stringify(adminData));
+                    await fetchAllWorkers();
+                    window.showApp();
+                    return; 
+                }
+
+                const q = query(collection(db, "workers"), where("document", "==", docInput), where("status", "==", "activo"));
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    window.appState.currentUser = querySnapshot.docs[0].data();
+                    sessionStorage.setItem('hr_v2_session', JSON.stringify(window.appState.currentUser));
+                    await fetchAllWorkers();
+                    window.showApp();
+                } else {
+                    window.showToast('Cédula no encontrada', 'error');
+                }
+            } catch (error) {
+                window.showToast('Error de conexión', 'error');
+            } finally {
+                btn.innerHTML = 'Ingresar al Sistema';
+                btn.disabled = false;
             }
-            showToast(`Bienvenido, ${user.name.split(' ')[0]}`);
         };
 
         window.logout = () => {
-            appState.currentUser = null;
-            sessionStorage.removeItem(SESSION_KEY);
-            setView('login');
+            sessionStorage.removeItem('hr_v2_session');
+            window.appState.currentUser = null;
+            document.getElementById('app-view').classList.add('hidden');
+            document.getElementById('login-view').classList.remove('hidden');
+            document.getElementById('login-doc').value = '';
         };
 
-        window.setView = (view, params = {}) => {
-            // Strict Worker Guard
-            if (appState.currentUser?.role === 'WORKER' && view !== 'profile' && view !== 'login') {
-                view = 'profile';
-                params = { workerId: appState.currentUser.id, activeTab: 'rendimiento' };
+        // NAVEGACIÓN
+        window.showApp = () => {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
+            
+            const roleNames = { 'ADMIN': 'Administrador', 'HR': 'Recursos Humanos', 'COORD': 'Coordinador', 'WORKER': 'Trabajador' };
+            document.getElementById('user-role-display').innerText = `${window.appState.currentUser.name} (${roleNames[window.appState.currentUser.role]})`;
+
+            window.renderNav();
+            
+            if (window.appState.currentUser.role === 'WORKER') {
+                window.appState.selectedWorker = window.appState.currentUser;
+                window.setView('profile');
+            } else {
+                window.setView('dashboard');
+            }
+        };
+
+        window.setView = async (viewName) => {
+            if (window.appState.currentUser.role === 'WORKER' && viewName !== 'profile') return;
+            window.appState.currentView = viewName;
+            window.renderNav();
+            
+            const main = document.getElementById('main-content');
+            
+            if (viewName === 'dashboard') main.innerHTML = window.renderDashboard();
+            if (viewName === 'directory') main.innerHTML = window.renderDirectory();
+            if (viewName === 'profile') {
+                main.innerHTML = '<div class="flex items-center justify-center h-full"><i class="fas fa-spinner fa-spin text-4xl text-[#7be4af]"></i></div>';
+                await window.loadProfileData(); // Carga Puntos y Documentos de Firebase
+                main.innerHTML = window.renderProfile();
+                window.switchTab('rendimiento'); // Pestaña principal al abrir
+            }
+        };
+
+        window.renderNav = () => {
+            const role = window.appState.currentUser.role;
+            const isWorker = role === 'WORKER';
+            let html = '';
+            const linkClass = (isActive) => `flex md:w-full items-center justify-center md:justify-start gap-2 p-3 md:py-3 md:px-4 rounded-xl transition-all cursor-pointer font-medium text-sm md:text-base ${isActive ? 'bg-[#7be4af] text-[#0d4e46] shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`;
+
+            if (!isWorker) {
+                html += `<div onclick="setView('dashboard')" class="${linkClass(window.appState.currentView === 'dashboard')}"><i class="fas fa-home"></i><span class="hidden md:inline">Inicio</span></div>`;
+                html += `<div onclick="setView('directory')" class="${linkClass(window.appState.currentView === 'directory')}"><i class="fas fa-users"></i><span class="hidden md:inline">Equipo</span></div>`;
+            } else {
+                html += `<div class="${linkClass(true)}"><i class="fas fa-user"></i><span class="hidden md:inline">Mi Perfil</span></div>`;
             }
 
-            appState.currentView = view;
-            appState.viewParams = params;
-            renderApp();
+            if (isWorker) {
+                html += `<div onclick="logout()" class="flex md:hidden items-center justify-center gap-2 p-3 rounded-xl transition-all cursor-pointer font-medium text-sm text-red-300 hover:bg-white/10"><i class="fas fa-sign-out-alt"></i></div>`;
+            }
+            document.getElementById('nav-links').innerHTML = html;
         };
 
-        function renderLogin() {
+        // VISTAS SIMPLES
+        window.renderDashboard = () => {
+            const activeWorkers = window.appState.dbWorkers.filter(w => w.status === 'activo').length;
             return `
-                <div class="min-h-full bg-dark flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
-                    <div class="w-20 h-20 bg-mint rounded-3xl flex items-center justify-center text-dark mb-8 shadow-[0_0_40px_rgba(123,228,175,0.3)]">
-                        <i data-lucide="briefcase" class="w-10 h-10"></i>
-                    </div>
-                    <h1 class="text-4xl font-black text-white mb-2 tracking-tight text-center">HR Events</h1>
-                    <p class="text-mint font-medium mb-10 text-center max-w-sm">Sistema centralizado de talento y rendimiento.</p>
-                    
-                    <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-xl">
-                        <h2 class="text-xl font-bold text-gray-800 mb-6 text-center">Iniciar Sesión</h2>
-                        <form onsubmit="window.login(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1">Cédula o Documento</label>
-                                <div class="relative">
-                                    <i data-lucide="user" class="absolute left-4 top-3.5 text-gray-400 w-5 h-5"></i>
-                                    <input type="text" id="l-cedula" class="w-full border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-mint focus:ring-2 focus:ring-mint/20" placeholder="Ej. 123456" required>
-                                </div>
-                            </div>
-                            <button type="submit" class="w-full bg-mint text-dark font-bold rounded-2xl py-3.5 hover:bg-minthover transition-colors shadow-lg">Ingresar al Sistema</button>
-                        </form>
+            <div class="p-6 md:p-10 max-w-6xl mx-auto">
+                <h2 class="text-3xl font-bold text-[#0d4e46] mb-8">Panel Principal</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-l-[#7be4af]">
+                        <div class="w-14 h-14 rounded-2xl bg-[#7be4af]/20 text-[#146459] flex items-center justify-center text-2xl"><i class="fas fa-users"></i></div>
+                        <div><p class="text-sm text-gray-500 font-bold">Activos</p><p class="text-3xl font-black text-[#0d4e46]">${activeWorkers}</p></div>
                     </div>
                 </div>
-            `;
-        }
+            </div>`;
+        };
 
-        function renderLayout(contentHTML) {
-            const u = appState.currentUser;
-            const isWorker = u.role === 'WORKER';
-
-            const navItems = [
-                { id: 'dashboard', icon: 'layout-dashboard', label: 'Inicio', roles: ['ADMIN', 'HR', 'COORD'] },
-                { id: 'workers', icon: 'users', label: 'Equipo', roles: ['ADMIN', 'HR', 'COORD'] },
-                { id: 'ranking', icon: 'star', label: 'Ranking', roles: ['ADMIN', 'HR', 'COORD'] }
-            ].filter(i => i.roles.includes(u.role));
-
-            return `
-                <div class="flex h-full w-full bg-dark overflow-hidden">
-                    <!-- SIDEBAR (PC) -->
-                    <div class="hidden md:flex flex-col w-72 bg-dark text-white pt-8 pb-6 px-6 border-r border-light relative z-20">
-                        <div class="mb-10 flex items-center gap-3">
-                            <div class="w-10 h-10 bg-mint rounded-xl flex items-center justify-center text-dark shrink-0">
-                                <i data-lucide="briefcase" class="w-6 h-6"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-xl font-black tracking-tight leading-tight">HR Events</h2>
-                                <p class="text-[10px] text-mint uppercase font-bold tracking-widest">Portal V2</p>
-                            </div>
-                        </div>
-
-                        <nav class="flex-1 space-y-2">
-                            ${isWorker 
-                                ? `<button onclick="window.setView('profile', {workerId: '${u.id}', activeTab: 'rendimiento'})" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all bg-mint text-dark shadow-lg shadow-mint/20"><i data-lucide="user" class="w-5 h-5"></i> Mi Perfil</button>`
-                                : navItems.map(item => `
-                                    <button onclick="window.setView('${item.id}')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'bg-mint text-dark shadow-lg shadow-mint/20' : 'text-gray-300 hover:bg-light hover:text-white'}">
-                                        <i data-lucide="${item.icon}" class="w-5 h-5"></i> ${item.label}
-                                    </button>
-                                `).join('')
-                            }
-                        </nav>
-
-                        <div class="mt-auto bg-light p-4 rounded-3xl border border-light/50">
-                            <div class="flex items-center gap-3 mb-3">
-                                ${u.photo 
-                                    ? `<img src="${u.photo}" class="w-10 h-10 rounded-full object-cover shrink-0">`
-                                    : `<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-dark font-bold shrink-0">${u.name.substring(0,2).toUpperCase()}</div>`
-                                }
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-bold truncate">${u.name}</p>
-                                    <p class="text-[10px] text-mint font-black uppercase tracking-wider">${u.role}</p>
-                                </div>
-                            </div>
-                            <button onclick="window.logout()" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-gray-300 hover:text-white bg-dark py-2 rounded-xl transition-colors">
-                                <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- MAIN CONTENT -->
-                    <div class="flex-1 flex flex-col h-full bg-[#f8fafc] md:rounded-l-[2.5rem] overflow-hidden relative shadow-2xl md:border-l-8 border-mint/20">
-                        <!-- Topbar PC -->
-                        <div class="hidden md:flex h-20 items-center justify-end px-8 bg-white border-b border-gray-100 shrink-0">
-                            <div class="flex items-center gap-2 text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 font-medium text-sm">
-                                <i data-lucide="calendar" class="w-4 h-4"></i> ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
-                            </div>
-                        </div>
-
-                        <!-- Dynamic Content Area -->
-                        <div class="flex-1 overflow-y-auto p-6 md:p-8 relative hide-scrollbar pb-24 md:pb-8">
-                            ${contentHTML}
-                        </div>
-
-                        <!-- BOTTOM NAV (Mobile) -->
-                        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 rounded-t-4xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-50">
-                            <div class="flex justify-around items-center max-w-md mx-auto">
-                                ${isWorker 
-                                    ? `
-                                        <button onclick="window.setView('profile', {workerId: '${u.id}', activeTab: 'rendimiento'})" class="flex flex-col items-center gap-1 transition-colors text-dark">
-                                            <div class="p-2.5 rounded-2xl bg-mint/20 text-dark"><i data-lucide="user" class="w-6 h-6 stroke-[2.5px]"></i></div>
-                                            <span class="text-[10px] font-bold">Mi Perfil</span>
-                                        </button>
-                                        <button onclick="window.logout()" class="flex flex-col items-center gap-1 transition-colors text-gray-400 hover:text-red-500">
-                                            <div class="p-2.5 rounded-2xl"><i data-lucide="log-out" class="w-6 h-6 stroke-2"></i></div>
-                                            <span class="text-[10px] font-bold">Salir</span>
-                                        </button>
-                                    `
-                                    : navItems.map(item => `
-                                        <button onclick="window.setView('${item.id}')" class="flex flex-col items-center gap-1 transition-colors ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'text-dark' : 'text-gray-400'}">
-                                            <div class="p-2.5 rounded-2xl transition-all ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'bg-mint/20 text-dark' : ''}">
-                                                <i data-lucide="${item.icon}" class="w-6 h-6 ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'stroke-[2.5px]' : 'stroke-2'}"></i>
-                                            </div>
-                                            <span class="text-[10px] font-bold">${item.label}</span>
-                                        </button>
-                                    `).join('')
-                                }
-                            </div>
-                        </div>
-                    </div>
+        window.renderDirectory = () => {
+            let html = `
+            <div class="p-6 md:p-10 max-w-6xl mx-auto h-full flex flex-col">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <h2 class="text-3xl font-bold text-[#0d4e46]">Directorio del Equipo</h2>
+                    <button onclick="openWorkerForm()" class="bg-[#7be4af] text-[#0d4e46] px-5 py-2.5 rounded-xl font-bold hover:bg-[#5ac992] shadow-md flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Nuevo
+                    </button>
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             `;
-        }
-
-        function renderDashboard() {
-            const activeWorkers = appState.data.workers.filter(w => w.status === 'active').length;
-            
-            // Calculate avg points for current month
-            const monthlyPoints = appState.data.points.filter(p => p.month === appState.selectedMonth);
-            const scores = {};
-            monthlyPoints.forEach(p => {
-                scores[p.workerId] = (scores[p.workerId] || 0) + (p.type === 'positive' ? Number(p.points) : -Number(p.points));
-            });
-            const avgPoints = Object.keys(scores).length > 0 ? Math.round(Object.values(scores).reduce((a,b)=>a+b,0) / Object.keys(scores).length) : 0;
-            
-            // Top worker
-            const topWorkerId = Object.keys(scores).sort((a,b) => scores[b] - scores[a])[0];
-            const topWorker = topWorkerId ? appState.data.workers.find(w => w.id === topWorkerId) : null;
-
-            return `
-                <div class="space-y-6 animate-in fade-in duration-300">
-                    <div class="bg-dark md:bg-transparent -mx-6 -mt-6 p-8 md:p-0 md:mx-0 md:mt-0 text-white md:text-dark md:mb-6 rounded-b-4xl md:rounded-none">
-                        <h1 class="text-3xl font-black mb-1">Hola, ${appState.currentUser.name.split(' ')[0]}</h1>
-                        <p class="text-mint md:text-gray-500 font-medium">Resumen administrativo general</p>
-                        
-                        <div class="flex justify-between items-end mt-8 border-b border-light md:border-gray-200 pb-6">
-                            <div class="text-center">
-                                <p class="text-5xl font-black text-mint md:text-dark mb-1">${activeWorkers}</p>
-                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Activos</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-5xl font-black text-white md:text-mint mb-1">${avgPoints}</p>
-                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Prom. Puntos</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-5xl font-black text-mint md:text-dark mb-1">${appState.data.documents.length}</p>
-                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Docs.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div onclick="window.setView('workers')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-mint transition-colors">
-                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="users" class="w-6 h-6"></i></div>
-                            <div><h3 class="font-bold text-gray-800">Directorio de Equipo</h3><p class="text-sm text-gray-500">Gestionar trabajadores</p></div>
-                        </div>
-                        <div onclick="window.setView('ranking')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-mint transition-colors">
-                            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="star" class="w-6 h-6"></i></div>
-                            <div><h3 class="font-bold text-gray-800">Ranking y Rendimiento</h3><p class="text-sm text-gray-500">Evaluaciones mensuales</p></div>
-                        </div>
-                    </div>
-
-                    ${topWorker ? `
-                        <div>
-                            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-mint"></i> Destacado del Mes</h2>
-                            <div class="bg-gradient-to-r from-dark to-light p-6 rounded-3xl text-white flex items-center gap-6 shadow-xl">
-                                <div class="relative">
-                                    ${topWorker.photo ? `<img src="${topWorker.photo}" class="w-20 h-20 rounded-full object-cover border-4 border-white/20">` : `<div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-black border-4 border-white/20">${topWorker.name.substring(0,2).toUpperCase()}</div>`}
-                                    <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 p-1.5 rounded-full shadow-lg border-2 border-white"><i data-lucide="award" class="w-4 h-4"></i></div>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-mint font-black text-xs uppercase tracking-widest mb-1">Líder en Puntos</p>
-                                    <h3 class="text-2xl font-bold truncate">${topWorker.name}</h3>
-                                    <p class="opacity-80 text-sm mt-1">${topWorker.role} • ${scores[topWorker.id]} pts</p>
-                                </div>
-                            </div>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }
-
-        function renderWorkers() {
-            const canEdit = ['ADMIN', 'HR'].includes(appState.currentUser.role);
-            const workersList = appState.data.workers.map(w => `
-                <div onclick="window.setView('profile', {workerId: '${w.id}'})" class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-start gap-4 cursor-pointer hover:border-mint transition-colors">
-                    ${w.photo ? `<img src="${w.photo}" class="w-14 h-14 rounded-2xl object-cover shrink-0">` : `<div class="w-14 h-14 bg-gray-100 text-gray-400 rounded-2xl flex items-center justify-center font-black text-xl shrink-0">${w.name.substring(0,2).toUpperCase()}</div>`}
+            window.appState.dbWorkers.forEach(w => {
+                const photo = w.photo ? `<img src="${w.photo}" class="w-16 h-16 rounded-2xl object-cover shadow-sm">` : `<div class="w-16 h-16 rounded-2xl bg-[#0d4e46] text-white flex items-center justify-center text-2xl shadow-sm"><i class="fas fa-user"></i></div>`;
+                const isInactive = w.status === 'inactivo';
+                html += `
+                <div onclick="viewWorkerProfile('${w.id}')" class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md cursor-pointer flex items-center gap-4 ${isInactive ? 'opacity-60' : ''}">
+                    ${photo}
                     <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-gray-800 truncate">${w.name}</h3>
-                            <span class="text-[10px] px-2 py-1 rounded-full font-bold uppercase ${w.status==='active'?'bg-green-50 text-green-600 border border-green-200':'bg-gray-100 text-gray-500'}">${w.status==='active'?'Activo':'Inactivo'}</span>
-                        </div>
-                        <p class="text-sm text-light font-semibold mt-0.5 truncate">${w.jobRole}</p>
-                        <p class="text-xs text-gray-400 truncate mt-1">ID: ${w.idNumber} • ${w.role}</p>
+                        <h4 class="font-bold text-gray-800 text-lg truncate-text">${w.name}</h4>
+                        <p class="text-sm text-[#146459] font-medium">${w.role} ${isInactive ? '(Inactivo)' : ''}</p>
                     </div>
-                </div>
-            `).join('');
+                    <i class="fas fa-chevron-right text-gray-300"></i>
+                </div>`;
+            });
+            html += `</div></div>`;
+            return html;
+        };
+
+        // EL PERFIL: PUNTOS Y DOCUMENTOS
+        window.viewWorkerProfile = (id) => {
+            window.appState.selectedWorker = window.appState.dbWorkers.find(w => w.id === id);
+            window.setView('profile');
+        };
+
+        window.loadProfileData = async () => {
+            const wId = window.appState.selectedWorker.id;
+            try {
+                // Fetch Puntos
+                const qPoints = query(collection(db, "points"), where("workerId", "==", wId));
+                const snapPoints = await getDocs(qPoints);
+                window.appState.currentProfilePoints = snapPoints.docs.map(doc => ({dbId: doc.id, ...doc.data()})).sort((a,b) => b.timestamp - a.timestamp);
+                
+                // Fetch Docs
+                const qDocs = query(collection(db, "documents"), where("workerId", "==", wId));
+                const snapDocs = await getDocs(qDocs);
+                window.appState.currentProfileDocs = snapDocs.docs.map(doc => ({dbId: doc.id, ...doc.data()})).sort((a,b) => b.timestamp - a.timestamp);
+            } catch (e) {
+                console.error(e);
+            }
+        };
+
+        window.renderProfile = () => {
+            const w = window.appState.selectedWorker;
+            const role = window.appState.currentUser.role;
+            const photo = w.photo ? `<img src="${w.photo}" class="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-lg">` : `<div class="w-24 h-24 rounded-3xl bg-white text-[#0d4e46] flex items-center justify-center text-4xl shadow-lg font-bold border-4 border-gray-50">${w.name.charAt(0)}</div>`;
+            
+            const canEdit = ['ADMIN', 'HR'].includes(role);
+            const canGrade = ['ADMIN', 'HR', 'COORD'].includes(role);
+            const isSelf = window.appState.currentUser.id === w.id;
+
+            // Calcular puntos
+            let totalPoints = 0;
+            let pointsListHtml = '';
+            window.appState.currentProfilePoints.forEach(p => {
+                totalPoints += (p.type === 'pos' ? p.amount : -p.amount);
+                const color = p.type === 'pos' ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50';
+                const sign = p.type === 'pos' ? '+' : '-';
+                pointsListHtml += `
+                    <div class="flex items-center justify-between p-3 border-b border-gray-50 last:border-0">
+                        <div>
+                            <p class="font-bold text-gray-800 text-sm">${p.reason}</p>
+                            <p class="text-xs text-gray-400">${new Date(p.timestamp).toLocaleDateString()} por ${p.evaluator}</p>
+                        </div>
+                        <span class="font-bold ${color} px-2 py-1 rounded-lg text-sm">${sign}${p.amount}</span>
+                    </div>`;
+            });
+            if(pointsListHtml === '') pointsListHtml = '<p class="text-sm text-gray-400 italic py-4">No hay evaluaciones registradas.</p>';
+
+            // Lista Documentos
+            let docsListHtml = '';
+            window.appState.currentProfileDocs.forEach(d => {
+                docsListHtml += `
+                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl mb-2 border border-gray-100">
+                        <div class="flex items-center gap-3 overflow-hidden flex-1 min-w-0 pr-3">
+                            <i class="fas fa-file-pdf text-red-500 text-xl flex-shrink-0"></i>
+                            <div class="flex-1 min-w-0 truncate">
+                                <p class="font-bold text-gray-800 text-sm truncate">${d.name}</p>
+                                <p class="text-xs text-gray-400">${new Date(d.timestamp).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 flex-shrink-0">
+                            <a href="${d.file}" download="${d.name}.pdf" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#146459] hover:bg-gray-100"><i class="fas fa-download"></i></a>
+                            ${canEdit ? `<button onclick="deleteDocFile('${d.dbId}')" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-400 hover:bg-red-50"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`;
+            });
+            if(docsListHtml === '') docsListHtml = '<p class="text-sm text-gray-400 italic py-2">No hay documentos subidos.</p>';
 
             return `
-                <div class="space-y-6 flex flex-col h-full animate-in fade-in duration-300">
-                    <div class="flex justify-between items-end shrink-0">
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-800">Directorio</h1>
-                            <p class="text-gray-500 text-sm">Personal registrado.</p>
+            <div class="p-4 md:p-10 max-w-4xl mx-auto">
+                ${!isSelf ? `<button onclick="setView('directory')" class="mb-6 text-gray-500 hover:text-[#0d4e46] font-bold flex items-center gap-2"><i class="fas fa-arrow-left"></i> Volver</button>` : ''}
+                
+                <div class="bg-[#0d4e46] rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden mb-6">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
+                    <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
+                        ${photo}
+                        <div class="flex-1 text-white mt-2">
+                            <h2 class="text-3xl font-black mb-1">${w.name}</h2>
+                            <p class="text-[#7be4af] font-medium text-lg mb-3">${w.role} | C.C. ${w.document}</p>
+                            ${w.availabilityText ? `<div class="inline-flex items-center gap-2 bg-black/20 px-4 py-1.5 rounded-full text-sm font-medium mt-1"><i class="fas fa-clock text-[#7be4af]"></i> Disp: ${w.availabilityText}</div>` : ''}
                         </div>
-                        ${canEdit ? `<button onclick="window.openWorkerModal()" class="bg-mint text-dark px-4 py-2.5 rounded-2xl font-bold shadow-lg hover:bg-minthover flex items-center gap-2 text-sm"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo</button>` : ''}
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto hide-scrollbar pb-4 pr-2">
-                        ${workersList || '<p class="text-gray-400 col-span-full py-10 text-center">No hay trabajadores.</p>'}
+                        <div class="flex gap-3">
+                            ${(!isSelf && w.phone) ? `<a href="https://wa.me/57${w.phone}" target="_blank" class="bg-[#25D366] text-white w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg hover:scale-105 transition-all"><i class="fab fa-whatsapp"></i></a>` : ''}
+                            ${canEdit ? `<button onclick="openWorkerForm('${w.id}')" class="bg-white/20 text-white w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg hover:bg-white/30 transition-all"><i class="fas fa-pen"></i></button>` : ''}
+                        </div>
                     </div>
                 </div>
-            `;
-        }
 
-        function renderProfile(workerId) {
-            const worker = appState.data.workers.find(w => w.id === workerId);
-            if(!worker) return `<p>Error: Trabajador no encontrado</p>`;
-
-            const u = appState.currentUser;
-            const isSelf = u.id === worker.id;
-            const isWorker = u.role === 'WORKER';
-            const canEdit = ['ADMIN', 'HR'].includes(u.role);
-            const canEvaluate = ['ADMIN', 'HR', 'COORD'].includes(u.role);
-            
-            const activeTab = appState.viewParams.activeTab || 'rendimiento';
-
-            // Points logic
-            const workerPoints = appState.data.points.filter(p => p.workerId === worker.id).sort((a,b) => new Date(b.date) - new Date(a.date));
-            const totalPoints = workerPoints.reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
-            const monthPoints = workerPoints.filter(p => p.month === getCurrentMonthStr()).reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
-
-            // Documents
-            const docs = appState.data.documents.filter(d => d.workerId === worker.id);
-
-            const renderTabContent = () => {
-                if(activeTab === 'rendimiento') {
-                    return `
-                        <div class="space-y-6 animate-in slide-in-from-right-4 duration-300">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="bg-gradient-to-r from-dark to-light p-6 rounded-3xl text-white shadow-lg flex justify-between items-center">
-                                    <div>
-                                        <p class="text-mint font-semibold text-xs uppercase tracking-wider mb-1">Mes Actual (${getCurrentMonthStr()})</p>
-                                        <h3 class="text-4xl font-black">${monthPoints} <span class="text-lg font-medium text-gray-300">pts</span></h3>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="text-xs text-gray-300 uppercase tracking-wider mb-1">Histórico Total</p>
-                                        <p class="text-xl font-bold">${totalPoints} pts</p>
-                                    </div>
-                                </div>
-                                ${canEvaluate ? `
-                                    <div class="bg-white p-6 rounded-3xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm">
-                                        <p class="text-sm font-bold text-gray-800 mb-3">Registrar Evaluación</p>
-                                        <button onclick="window.openPointsModal('${worker.id}')" class="w-full bg-mint text-dark font-bold py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-minthover transition-colors"><i data-lucide="star" class="w-4 h-4"></i> Evaluar Rendimiento</button>
-                                    </div>
-                                ` : ''}
+                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="flex border-b overflow-x-auto hide-scroll">
+                        <button onclick="switchTab('rendimiento')" id="tab-btn-rendimiento" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Rendimiento</button>
+                        <button onclick="switchTab('laboral')" id="tab-btn-laboral" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Laboral</button>
+                        <button onclick="switchTab('documentos')" id="tab-btn-documentos" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Documentos</button>
+                        ${canEdit ? `<button onclick="switchTab('banco')" id="tab-btn-banco" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400"><i class="fas fa-lock text-xs mr-1"></i> Banco</button>` : ''}
+                    </div>
+                    
+                    <div class="p-6 min-h-[300px]">
+                        <!-- RENDIMIENTO -->
+                        <div id="tab-rendimiento" class="hidden">
+                            <div class="flex items-center justify-between mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                <div><h3 class="text-xl font-black text-[#0d4e46]">Puntos Totales</h3><p class="text-xs text-gray-500">Historial acumulado</p></div>
+                                <div class="text-3xl font-black ${totalPoints >= 0 ? 'text-[#146459]' : 'text-red-500'}">${totalPoints}</div>
                             </div>
-                            <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
-                                <h3 class="font-bold text-gray-800 mb-4">Historial de Movimientos</h3>
-                                <div class="space-y-3">
-                                    ${workerPoints.length === 0 ? '<p class="text-gray-400 text-center py-4 text-sm">No hay registros.</p>' : workerPoints.map(p => `
-                                        <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl gap-3">
-                                            <div class="flex gap-3 items-center">
-                                                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black shrink-0 ${p.type==='positive'?'bg-green-100 text-green-600':'bg-red-100 text-red-600'}">${p.type==='positive'?'+':'-'}${p.points}</div>
-                                                <div><h4 class="font-bold text-gray-800 text-sm">${p.reason}</h4><p class="text-xs text-gray-500">${p.notes||'Sin observación'}</p></div>
-                                            </div>
-                                            <div class="text-left md:text-right text-[10px] text-gray-400 font-medium space-y-0.5">
-                                                <p class="bg-white px-2 py-1 rounded-md border border-gray-200 inline-block text-gray-600">${p.date}</p>
-                                                <p>Por: ${p.evaluator}</p>
-                                            </div>
-                                        </div>
-                                    `).join('')}
+                            
+                            ${canGrade ? `
+                            <div class="bg-white border rounded-2xl p-4 mb-6 shadow-sm">
+                                <h4 class="text-sm font-bold text-gray-800 mb-3">Agregar Evaluación</h4>
+                                <div class="flex gap-2 mb-3">
+                                    <input type="number" id="pt-amount" placeholder="Puntos" class="w-24 p-2 border rounded-xl bg-gray-50 text-sm">
+                                    <select id="pt-type" class="p-2 border rounded-xl bg-gray-50 text-sm font-bold">
+                                        <option value="pos" class="text-green-600">Sumar (+)</option>
+                                        <option value="neg" class="text-red-600">Restar (-)</option>
+                                    </select>
                                 </div>
-                            </div>
+                                <div class="flex gap-2">
+                                    <input type="text" id="pt-reason" placeholder="Motivo de la evaluación..." class="flex-1 p-2 border rounded-xl bg-gray-50 text-sm">
+                                    <button onclick="savePoint()" class="bg-[#0d4e46] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-[#146459]"><i class="fas fa-check"></i></button>
+                                </div>
+                            </div>` : ''}
+                            
+                            <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Historial</h4>
+                            <div class="border rounded-2xl overflow-hidden">${pointsListHtml}</div>
                         </div>
-                    `;
-                }
-                if(activeTab === 'laboral') {
-                    return `
-                        <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-6 animate-in slide-in-from-right-4 duration-300">
+
+                        <!-- LABORAL -->
+                        <div id="tab-laboral" class="hidden space-y-4">
+                            <div><p class="text-xs text-gray-500 font-bold">Teléfono / Ciudad</p><p class="font-medium text-gray-800">${w.phone || '-'} | ${w.city || '-'}</p></div>
+                            <div><p class="text-xs text-gray-500 font-bold">Especialidades</p><p class="font-medium text-[#146459]">${w.specialties || 'No registradas'}</p></div>
+                            <div><p class="text-xs text-gray-500 font-bold">Días y Horarios Disponibles</p><p class="font-medium text-gray-800 bg-gray-50 p-3 rounded-xl border">${w.availabilityText || 'No especificado'}</p></div>
+                        </div>
+
+                        <!-- DOCUMENTOS -->
+                        <div id="tab-documentos" class="hidden">
+                            ${canEdit ? `
+                            <div class="bg-[#146459]/5 border border-[#146459]/20 p-4 rounded-2xl mb-6 flex items-center justify-between gap-4">
+                                <div><p class="font-bold text-[#0d4e46] text-sm">Subir Documento (PDF)</p><p class="text-xs text-gray-500">Max 1MB recomendado.</p></div>
+                                <label class="bg-[#146459] text-white px-4 py-2 rounded-xl text-sm font-bold cursor-pointer hover:bg-[#0d4e46] transition-all shadow-md flex-shrink-0">
+                                    <i class="fas fa-upload mr-1"></i> Seleccionar
+                                    <input type="file" accept="application/pdf" class="hidden" onchange="uploadDocument(event)">
+                                </label>
+                            </div>` : ''}
+                            <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Archivos Guardados</h4>
+                            <div>${docsListHtml}</div>
+                        </div>
+
+                        <!-- BANCO -->
+                        ${canEdit ? `
+                        <div id="tab-banco" class="hidden space-y-4">
+                            <div class="bg-orange-50 text-orange-800 p-3 rounded-xl text-sm font-medium mb-4"><i class="fas fa-shield-alt mr-2"></i> Información protegida por Firestore.</div>
+                            <div><p class="text-xs text-gray-500 font-bold">Banco / Tipo</p><p class="font-medium text-gray-800">${w.bankName || 'N/A'} - ${w.bankType || 'N/A'}</p></div>
                             <div>
-                                <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> Información Personal</h3>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Documento</p><p class="font-medium text-sm">${worker.idNumber}</p></div>
-                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Teléfono</p><p class="font-medium text-sm">${worker.phone}</p></div>
-                                    <div class="col-span-2"><p class="text-[10px] text-gray-400 font-bold uppercase">Email</p><p class="font-medium text-sm">${worker.email || 'N/A'}</p></div>
-                                    <div class="col-span-2 bg-red-50 p-3 rounded-xl border border-red-100">
-                                        <p class="text-[10px] text-red-400 font-bold uppercase mb-1">Emergencia</p>
-                                        <p class="font-bold text-red-700 text-sm">${worker.emergencyContact} - ${worker.emergencyPhone}</p>
-                                    </div>
+                                <p class="text-xs text-gray-500 font-bold">Número de Cuenta</p>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-bold text-lg text-[#0d4e46] bg-gray-50 px-3 py-1 rounded-lg border">${w.bankNumber || 'N/A'}</p>
+                                    ${w.bankNumber ? `<button onclick="copyToClipboard('${w.bankNumber}')" class="bg-[#7be4af] text-[#0d4e46] w-8 h-8 rounded-lg shadow-sm hover:scale-105"><i class="fas fa-copy"></i></button>` : ''}
                                 </div>
                             </div>
-                            <div>
-                                <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4 text-gray-400"></i> Perfil Laboral</h3>
-                                <div class="grid grid-cols-2 gap-4 mb-4">
-                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Cargo Principal</p><p class="font-bold text-dark text-base">${worker.jobRole}</p></div>
-                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Ingreso</p><p class="font-medium text-sm">${worker.joinDate || 'N/A'}</p></div>
-                                </div>
-                                <div class="mb-4">
-                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-2">Especialidades</p>
-                                    <div class="flex flex-wrap gap-2">
-                                        ${worker.specialties?.length ? worker.specialties.map(s => `<span class="bg-mint/20 text-dark px-2.5 py-1 rounded-lg text-xs font-semibold">${s}</span>`).join('') : '<span class="text-xs text-gray-400">Ninguna</span>'}
-                                    </div>
-                                </div>
-                                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                                    <p class="text-[10px] text-blue-500 font-bold uppercase mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Días y Horarios Disponibles</p>
-                                    <p class="text-sm text-blue-900 font-medium whitespace-pre-wrap">${worker.availabilityText || 'No especificado.'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    `;
+                            <div><p class="text-xs text-gray-500 font-bold">Titular</p><p class="font-medium text-gray-800">${w.bankOwner || 'N/A'}</p></div>
+                        </div>` : ''}
+                    </div>
+                </div>
+            </div>`;
+        };
+
+        window.switchTab = (tabId) => {
+            const tabs = ['rendimiento', 'laboral', 'documentos', 'banco'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`tab-${t}`);
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if(content && btn) {
+                    if(t === tabId) {
+                        content.classList.remove('hidden'); content.classList.add('block');
+                        btn.classList.add('border-[#7be4af]', 'text-[#0d4e46]'); btn.classList.remove('border-transparent', 'text-gray-400');
+                    } else {
+                        content.classList.remove('block'); content.classList.add('hidden');
+                        btn.classList.remove('border-[#7be4af]', 'text-[#0d4e46]'); btn.classList.add('border-transparent', 'text-gray-400');
+                    }
                 }
-                if(activeTab === 'banco' && canEdit) {
-                    return `
-                        <div class="bg-white rounded-3xl border-l-4 border-l-purple-500 p-6 shadow-sm animate-in slide-in-from-right-4 duration-300">
-                            <div class="flex items-center gap-3 mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                                <i data-lucide="shield-alert" class="w-6 h-6 text-purple-600"></i>
-                                <div><h3 class="font-bold text-purple-900 text-sm">Información Confidencial</h3><p class="text-[10px] text-purple-700 mt-0.5">Exclusivo para administración.</p></div>
-                            </div>
-                            ${worker.bank?.bankName ? `
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Banco</p><p class="font-bold text-lg">${worker.bank.bankName}</p></div>
-                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Tipo de Cuenta</p><p class="font-medium">${worker.bank.type}</p></div>
-                                    <div>
-                                        <p class="text-xs text-gray-400 font-semibold uppercase">Número de Cuenta</p>
-                                        <div class="flex items-center gap-2 mt-1">
-                                            <p class="font-mono bg-gray-100 px-3 py-1.5 rounded-lg font-bold">${worker.bank.number}</p>
-                                            <button onclick="window.copyText('${worker.bank.number}')" class="p-1.5 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 hover:text-dark transition-colors" title="Copiar cuenta"><i data-lucide="copy" class="w-4 h-4"></i></button>
-                                        </div>
-                                    </div>
-                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Titular / Documento</p><p class="font-medium">${worker.bank.owner}</p></div>
-                                </div>
-                            ` : '<p class="text-gray-500 text-sm text-center py-4">No hay información bancaria registrada.</p>'}
-                        </div>
-                    `;
-                }
-                if(activeTab === 'docs') {
-                    return `
-                        <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm animate-in slide-in-from-right-4 duration-300">
-                            <div class="flex justify-between items-center mb-6">
-                                <h3 class="font-bold text-gray-800">Repositorio</h3>
-                                ${canEdit ? `
-                                    <label class="bg-gray-50 border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors flex items-center gap-2 shadow-sm">
-                                        <i data-lucide="upload" class="w-3 h-3"></i> Subir PDF
-                                        <input type="file" accept="application/pdf" class="hidden" onchange="window.handlePdfUpload(event, '${worker.id}')">
-                                    </label>
-                                ` : ''}
-                            </div>
-                            <div class="space-y-3">
-                                ${docs.length === 0 ? '<p class="text-gray-400 text-sm text-center py-6 border border-dashed rounded-2xl">No hay documentos registrados.</p>' : ''}
-                                ${docs.map(doc => `
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-2xl">
-                                        <div class="flex items-center gap-4 flex-1 min-w-0">
-                                            <div class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-                                            <div class="min-w-0 flex-1">
-                                                <p class="font-bold text-sm text-gray-800 truncate" title="${doc.name}">${doc.name}</p>
-                                                <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Subido: ${doc.date}</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-2 shrink-0 ml-4">
-                                            <a href="${doc.data}" download="${doc.name}" class="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"><i data-lucide="download" class="w-4 h-4"></i></a>
-                                            ${canEdit ? `<button onclick="window.deleteDoc('${doc.id}')" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `;
-                }
-                return '';
+            });
+        };
+
+        // ACCIONES DE PERFIL: PUNTOS Y DOCUMENTOS
+        window.savePoint = async () => {
+            const amount = parseInt(document.getElementById('pt-amount').value);
+            const type = document.getElementById('pt-type').value;
+            const reason = document.getElementById('pt-reason').value.trim();
+
+            if(!amount || !reason) return window.showToast('Ingresa cantidad y motivo', 'error');
+
+            const pointData = {
+                workerId: window.appState.selectedWorker.id,
+                amount: amount,
+                type: type,
+                reason: reason,
+                evaluator: window.appState.currentUser.name,
+                timestamp: Date.now()
             };
 
-            return `
-                <div class="flex flex-col h-full animate-in fade-in duration-300">
-                    <div class="flex justify-between items-center mb-6 shrink-0">
-                        ${!isWorker ? `<button onclick="window.setView('workers')" class="flex items-center gap-2 text-gray-500 hover:text-dark font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i> Volver</button>` : `<div></div>`}
-                        <div class="flex gap-2">
-                            ${canEdit ? `<button onclick="window.openWorkerModal('${worker.id}')" class="bg-white border border-gray-200 p-2.5 rounded-xl text-gray-600 hover:text-dark shadow-sm"><i data-lucide="edit" class="w-4 h-4"></i></button>` : ''}
-                            ${!isSelf ? `<a href="https://wa.me/57${worker.phone}" target="_blank" class="bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm hover:bg-[#1ebe5d] transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Contactar</a>` : ''}
-                        </div>
-                    </div>
-
-                    <!-- Header -->
-                    <div class="bg-dark text-white p-6 rounded-3xl flex flex-col md:flex-row items-center gap-6 mb-6 shrink-0 relative overflow-hidden">
-                        ${worker.photo ? `<img src="${worker.photo}" class="w-24 h-24 rounded-full object-cover border-4 border-white/20 relative z-10 bg-white">` : `<div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center text-4xl font-black relative z-10 border-4 border-white/20">${worker.name.substring(0,2).toUpperCase()}</div>`}
-                        <div class="text-center md:text-left relative z-10">
-                            <h2 class="text-2xl font-black">${worker.name}</h2>
-                            <p class="text-mint font-semibold">${worker.jobRole}</p>
-                            <span class="inline-block mt-2 text-[10px] px-2 py-1 bg-white/10 rounded-full uppercase font-bold tracking-wider">${worker.status}</span>
-                        </div>
-                    </div>
-
-                    <!-- Tabs Nav -->
-                    <div class="flex gap-2 mb-6 overflow-x-auto hide-scrollbar pb-2 shrink-0">
-                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'rendimiento'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='rendimiento'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="star" class="w-4 h-4"></i> Rendimiento</button>
-                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'laboral'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='laboral'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="user" class="w-4 h-4"></i> Laboral</button>
-                        ${canEdit ? `<button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'banco'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='banco'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="credit-card" class="w-4 h-4"></i> Banco</button>` : ''}
-                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'docs'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='docs'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="file-text" class="w-4 h-4"></i> Documentos</button>
-                    </div>
-
-                    <!-- Tab Content -->
-                    <div class="flex-1 pb-6">
-                        ${renderTabContent()}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderRanking() {
-            const monthlyPoints = appState.data.points.filter(p => p.month === appState.selectedMonth);
-            const scoresMap = {};
-            appState.data.workers.filter(w=>w.status==='active').forEach(w => scoresMap[w.id] = 0);
-            
-            monthlyPoints.forEach(p => {
-                if(scoresMap[p.workerId] !== undefined) {
-                    scoresMap[p.workerId] += (p.type === 'positive' ? Number(p.points) : -Number(p.points));
-                }
-            });
-
-            const ranking = Object.keys(scoresMap)
-                .map(id => ({ worker: appState.data.workers.find(w => w.id === id), score: scoresMap[id] }))
-                .filter(i => i.worker)
-                .sort((a, b) => b.score - a.score);
-
-            return `
-                <div class="space-y-6 flex flex-col h-full animate-in fade-in duration-300">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 shrink-0">
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-800">Ranking Mensual</h1>
-                            <p class="text-gray-500 text-sm">Evaluaciones del equipo.</p>
-                        </div>
-                        <input type="month" value="${appState.selectedMonth}" onchange="window.changeMonth(event)" class="bg-white border border-gray-200 rounded-xl p-3 font-bold text-dark focus:border-mint focus:outline-none shadow-sm w-full md:w-auto">
-                    </div>
-
-                    <div class="flex-1 overflow-y-auto pr-2 space-y-3 hide-scrollbar pb-6">
-                        ${ranking.length === 0 ? '<p class="text-gray-500 text-center py-10">No hay datos para este mes.</p>' : ranking.map((item, index) => `
-                            <div class="bg-white p-4 rounded-3xl border ${index===0?'border-yellow-400 shadow-md':'border-gray-100'} flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black shrink-0 ${index===0?'bg-yellow-400 text-yellow-900':index===1?'bg-gray-200 text-gray-600':index===2?'bg-amber-600 text-amber-100':'text-gray-400 text-xl'}">${index < 3 ? index+1 : '#'+(index+1)}</div>
-                                ${item.worker.photo ? `<img src="${item.worker.photo}" class="w-12 h-12 rounded-xl object-cover shrink-0">` : `<div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-400 shrink-0">${item.worker.name.substring(0,2).toUpperCase()}</div>`}
-                                <div class="flex-1 min-w-0">
-                                    <h3 class="font-bold truncate text-sm md:text-base ${index===0?'text-dark':'text-gray-800'}">${item.worker.name}</h3>
-                                    <p class="text-xs text-gray-500 truncate">${item.worker.jobRole}</p>
-                                </div>
-                                <div class="px-3 py-1.5 rounded-xl font-black shrink-0 ${index===0?'bg-yellow-50 text-yellow-700':'bg-green-50 text-green-700'}">${item.score} <span class="text-[10px] uppercase opacity-70">pts</span></div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        window.openWorkerModal = (id = null) => {
-            const isEdit = id != null;
-            const w = isEdit ? appState.data.workers.find(x => x.id === id) : {};
-            appState.formSpecialties = w.specialties || [];
-            
-            const html = `
-                <div class="fixed inset-0 bg-dark/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90dvh]">
-                        <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
-                            <h3 class="font-bold text-xl text-dark">${isEdit ? 'Editar' : 'Nuevo'} Trabajador</h3>
-                            <button onclick="window.closeModal()" class="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
-                        </div>
-                        <div class="p-6 overflow-y-auto flex-1 hide-scrollbar">
-                            <form id="worker-form" onsubmit="window.saveWorker(event)" class="space-y-6">
-                                <input type="hidden" id="w-id" value="${id || ''}">
-                                
-                                <div class="flex flex-col items-center mb-6">
-                                    <div class="relative w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 mb-3">
-                                        <img id="w-photo-preview" src="${w.photo || ''}" class="w-full h-full object-cover ${!w.photo ? 'hidden' : ''}">
-                                        <i id="w-photo-icon" data-lucide="camera" class="w-8 h-8 text-gray-400 ${w.photo ? 'hidden' : ''}"></i>
-                                    </div>
-                                    <label class="text-xs font-bold text-mint bg-dark px-4 py-2 rounded-xl cursor-pointer hover:bg-light transition-colors shadow-sm flex items-center gap-1">
-                                        <i data-lucide="upload" class="w-3 h-3"></i> Subir Foto
-                                        <input type="file" id="w-photo" accept="image/*" class="hidden" onchange="window.handlePhotoUpload(event)">
-                                    </label>
-                                    <input type="hidden" id="w-photo-base64" value="${w.photo || ''}">
-                                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Recomendado: Formato cuadrado, Max 1MB</p>
-                                </div>
-
-                                <div>
-                                    <h4 class="font-bold text-dark border-b border-gray-100 pb-2 mb-4">Información Personal</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Nombre Completo</label><input required id="w-name" value="${w.name||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Documento (ID)</label><input required id="w-idNum" value="${w.idNumber||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono (WhatsApp)</label><input required id="w-phone" value="${w.phone||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Email</label><input type="email" id="w-email" value="${w.email||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Contacto Emergencia (Nombre)</label><input id="w-em-name" value="${w.emergencyContact||''}" class="w-full border border-red-200 rounded-xl p-2.5 bg-red-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono Emergencia</label><input id="w-em-phone" value="${w.emergencyPhone||''}" class="w-full border border-red-200 rounded-xl p-2.5 bg-red-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 class="font-bold text-dark border-b border-gray-100 pb-2 mb-4 mt-6">Perfil Laboral y Disponibilidad</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 mb-1">Rol en Plataforma</label>
-                                            <select id="w-sys-role" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50">
-                                                <option value="WORKER" ${w.role==='WORKER'?'selected':''}>Trabajador</option>
-                                                <option value="COORD" ${w.role==='COORD'?'selected':''}>Coordinador</option>
-                                                <option value="HR" ${w.role==='HR'?'selected':''}>Recursos Humanos</option>
-                                                <option value="ADMIN" ${w.role==='ADMIN'?'selected':''}>Administrador</option>
-                                            </select>
-                                        </div>
-                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Cargo Principal</label><input id="w-job" value="${w.jobRole||''}" placeholder="Ej. Animador Senior" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50"></div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-gray-500 mb-1">Estado</label>
-                                            <select id="w-status" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50">
-                                                <option value="active" ${w.status==='active'?'selected':''}>Activo</option>
-                                                <option value="inactive" ${w.status==='inactive'?'selected':''}>Inactivo</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-span-1 md:col-span-2">
-                                            <label class="block text-xs font-bold text-gray-500 mb-2">Especialidades</label>
-                                            <div class="flex flex-wrap gap-2" id="sp-container">
-                                                ${specialtiesList.map(sp => `
-                                                    <button type="button" onclick="window.toggleSp('${sp}')" id="sp-btn-${sp.replace(/ /g,'')}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${appState.formSpecialties.includes(sp)?'bg-light text-white':'bg-gray-100 text-gray-500'}">${sp}</button>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                        <div class="col-span-1 md:col-span-2">
-                                            <label class="block text-xs font-bold text-gray-500 mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Días y Horarios Disponibles</label>
-                                            <textarea id="w-avail-text" rows="2" placeholder="Ej: Lunes y Miércoles: Todo el día. Sábados: Tarde." class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint text-sm">${w.availabilityText||''}</textarea>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <h4 class="font-bold text-purple-900 border-b border-purple-100 pb-2 mb-4 mt-6 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Info. Bancaria (Privado)</h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Banco</label><input id="w-b-name" value="${w.bank?.bankName||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
-                                        <div>
-                                            <label class="block text-xs font-bold text-purple-800 mb-1">Tipo Cuenta</label>
-                                            <select id="w-b-type" class="w-full border-purple-200 rounded-xl p-2.5 bg-white">
-                                                <option value="">Seleccione...</option><option value="Ahorros" ${w.bank?.type==='Ahorros'?'selected':''}>Ahorros</option><option value="Corriente" ${w.bank?.type==='Corriente'?'selected':''}>Corriente</option>
-                                            </select>
-                                        </div>
-                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Número</label><input id="w-b-num" value="${w.bank?.number||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
-                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Titular y Doc.</label><input id="w-b-owner" value="${w.bank?.owner||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
-                                    </div>
-                                </div>
-
-                                <div class="pt-4"><button type="submit" class="w-full bg-mint text-dark font-bold py-3.5 rounded-2xl hover:bg-minthover transition-colors shadow-lg">Guardar Trabajador</button></div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('modal-container').innerHTML = html;
-            if(window.lucide) window.lucide.createIcons();
+            try {
+                await addDoc(collection(db, "points"), pointData);
+                window.showToast('Evaluación guardada');
+                window.setView('profile'); // Recarga la vista para traer datos frescos
+            } catch (error) {
+                window.showToast('Error al guardar', 'error');
+            }
         };
 
-        window.toggleSp = (sp) => {
-            const idx = appState.formSpecialties.indexOf(sp);
-            if(idx > -1) appState.formSpecialties.splice(idx, 1);
-            else appState.formSpecialties.push(sp);
+        window.uploadDocument = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 1.2 * 1024 * 1024) return window.showToast('El PDF no debe exceder 1MB', 'error');
+
+            window.showToast('Subiendo documento...', 'success');
             
-            const btn = document.getElementById(`sp-btn-${sp.replace(/ /g,'')}`);
-            if(btn) {
-                btn.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${idx === -1 ? 'bg-light text-white' : 'bg-gray-100 text-gray-500'}`;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const base64 = ev.target.result;
+                const docData = {
+                    workerId: window.appState.selectedWorker.id,
+                    name: file.name.replace('.pdf', ''),
+                    file: base64,
+                    timestamp: Date.now()
+                };
+                
+                try {
+                    await addDoc(collection(db, "documents"), docData);
+                    window.showToast('Documento guardado exitosamente');
+                    window.setView('profile');
+                } catch (error) {
+                    window.showToast('Error al subir', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.deleteDocFile = async (dbId) => {
+            if(!confirm('¿Eliminar este documento permanentemente?')) return;
+            try {
+                await deleteDoc(doc(db, "documents", dbId));
+                window.showToast('Documento eliminado');
+                window.setView('profile');
+            } catch (error) {
+                window.showToast('Error al eliminar', 'error');
             }
+        };
+
+        // FORMULARIO TRABAJADOR
+        window.openWorkerForm = (id = null) => {
+            const form = document.getElementById('worker-form');
+            form.reset();
+            document.getElementById('w-photo-preview').src = '';
+            document.getElementById('w-photo-preview').classList.add('hidden');
+            document.getElementById('w-photo-icon').classList.remove('hidden');
+            document.getElementById('w-photo-base64').value = '';
+
+            const canSeeBank = ['ADMIN', 'HR'].includes(window.appState.currentUser.role);
+            document.getElementById('bank-section-form').classList.toggle('hidden', !canSeeBank);
+
+            if (id) {
+                const w = window.appState.dbWorkers.find(x => x.id === id);
+                document.getElementById('worker-modal-title').innerText = 'Editar Trabajador';
+                document.getElementById('w-id').value = w.id;
+                document.getElementById('w-name').value = w.name;
+                document.getElementById('w-doc').value = w.document;
+                document.getElementById('w-phone').value = w.phone || '';
+                document.getElementById('w-city').value = w.city || '';
+                document.getElementById('w-role').value = w.role;
+                document.getElementById('w-status').value = w.status;
+                document.getElementById('w-availability').value = w.availabilityText || '';
+                document.getElementById('w-specs').value = w.specialties || '';
+                
+                if (w.photo) {
+                    document.getElementById('w-photo-base64').value = w.photo;
+                    document.getElementById('w-photo-preview').src = w.photo;
+                    document.getElementById('w-photo-preview').classList.remove('hidden');
+                    document.getElementById('w-photo-icon').classList.add('hidden');
+                }
+
+                if (canSeeBank) {
+                    document.getElementById('w-bank-name').value = w.bankName || '';
+                    document.getElementById('w-bank-type').value = w.bankType || 'Ahorros';
+                    document.getElementById('w-bank-num').value = w.bankNumber || '';
+                    document.getElementById('w-bank-owner').value = w.bankOwner || '';
+                }
+            } else {
+                document.getElementById('worker-modal-title').innerText = 'Nuevo Trabajador';
+                document.getElementById('w-id').value = '';
+            }
+            document.getElementById('worker-modal').classList.remove('hidden');
+            document.getElementById('worker-modal').classList.add('flex');
+        };
+
+        window.closeWorkerModal = () => {
+            document.getElementById('worker-modal').classList.add('hidden');
+            document.getElementById('worker-modal').classList.remove('flex');
         };
 
         window.handlePhotoUpload = (e) => {
             const file = e.target.files[0];
-            if(!file) return;
-            if(file.size > 1024 * 1024) return showToast('La foto debe pesar menos de 1MB', 'error');
+            if (!file) return;
+            if (file.size > 800 * 1024) return window.showToast('La foto debe pesar menos de 800KB para Firestore', 'error');
+            
             const reader = new FileReader();
             reader.onload = (ev) => {
-                document.getElementById('w-photo-base64').value = ev.target.result;
-                document.getElementById('w-photo-preview').src = ev.target.result;
+                const base64 = ev.target.result;
+                document.getElementById('w-photo-base64').value = base64;
+                document.getElementById('w-photo-preview').src = base64;
                 document.getElementById('w-photo-preview').classList.remove('hidden');
                 document.getElementById('w-photo-icon').classList.add('hidden');
             };
             reader.readAsDataURL(file);
         };
 
-        window.saveWorker = (e) => {
-            e.preventDefault();
-            const id = document.getElementById('w-id').value;
-            const data = {
-                id: id || generateId(),
-                photo: document.getElementById('w-photo-base64').value,
+        window.saveWorker = async () => {
+            const formId = document.getElementById('w-id').value;
+            const btn = document.getElementById('save-worker-btn');
+            
+            const workerData = {
+                id: formId || 'w_' + Date.now(),
                 name: document.getElementById('w-name').value,
-                idNumber: document.getElementById('w-idNum').value,
+                document: document.getElementById('w-doc').value,
                 phone: document.getElementById('w-phone').value,
-                email: document.getElementById('w-email').value,
-                emergencyContact: document.getElementById('w-em-name').value,
-                emergencyPhone: document.getElementById('w-em-phone').value,
-                role: document.getElementById('w-sys-role').value,
-                jobRole: document.getElementById('w-job').value,
+                city: document.getElementById('w-city').value,
+                role: document.getElementById('w-role').value,
                 status: document.getElementById('w-status').value,
-                specialties: appState.formSpecialties,
-                availabilityText: document.getElementById('w-avail-text').value,
-                bank: {
-                    bankName: document.getElementById('w-b-name').value,
-                    type: document.getElementById('w-b-type').value,
-                    number: document.getElementById('w-b-num').value,
-                    owner: document.getElementById('w-b-owner').value
-                },
-                joinDate: id ? appState.data.workers.find(w=>w.id===id).joinDate : getTodayStr()
+                availabilityText: document.getElementById('w-availability').value,
+                specialties: document.getElementById('w-specs').value,
+                photo: document.getElementById('w-photo-base64').value
             };
 
-            if (id) {
-                const idx = appState.data.workers.findIndex(w => w.id === id);
-                appState.data.workers[idx] = data;
-            } else {
-                appState.data.workers.push(data);
+            if(!workerData.name || !workerData.document) return window.showToast('Nombre y documento requeridos', 'error');
+
+            if (['ADMIN', 'HR'].includes(window.appState.currentUser.role)) {
+                workerData.bankName = document.getElementById('w-bank-name').value;
+                workerData.bankType = document.getElementById('w-bank-type').value;
+                workerData.bankNumber = document.getElementById('w-bank-num').value;
+                workerData.bankOwner = document.getElementById('w-bank-owner').value;
+            } else if (formId) {
+                const oldData = window.appState.dbWorkers.find(w => w.id === formId);
+                if (oldData) {
+                    workerData.bankName = oldData.bankName;
+                    workerData.bankType = oldData.bankType;
+                    workerData.bankNumber = oldData.bankNumber;
+                    workerData.bankOwner = oldData.bankOwner;
+                }
             }
 
-            saveData();
-            showToast('Guardado correctamente');
-            window.closeModal();
-            renderApp();
-        };
+            btn.disabled = true;
+            btn.innerText = 'Guardando...';
 
-        window.openPointsModal = (workerId) => {
-            const html = `
-                <div class="fixed inset-0 bg-dark/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-                    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
-                        <div class="flex justify-between items-center p-5 border-b border-gray-100">
-                            <h3 class="font-bold text-lg text-dark">Evaluar</h3>
-                            <button onclick="window.closeModal()" class="p-1 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
-                        </div>
-                        <form onsubmit="window.savePoints(event, '${workerId}')" class="p-5 space-y-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-2">Tipo</label>
-                                <select id="p-type" class="w-full border border-gray-200 rounded-xl p-3 font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
-                                    <option value="positive">Positivo (+)</option>
-                                    <option value="negative">Negativo (-)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-2">Puntos</label>
-                                <input type="number" id="p-val" required min="1" value="10" class="w-full border border-gray-200 rounded-xl p-3 font-black text-xl text-center bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-2">Motivo Principal</label>
-                                <input type="text" id="p-reason" required placeholder="Ej. Puntualidad" class="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-2">Observación (Opccional)</label>
-                                <textarea id="p-notes" rows="2" class="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></textarea>
-                            </div>
-                            <button type="submit" class="w-full bg-dark text-mint font-bold py-3.5 rounded-2xl hover:bg-light transition-colors shadow-lg mt-2">Guardar</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.getElementById('modal-container').innerHTML = html;
-            if(window.lucide) window.lucide.createIcons();
-        };
+            try {
+                await setDoc(doc(db, "workers", workerData.id), workerData);
+                const index = window.appState.dbWorkers.findIndex(w => w.id === workerData.id);
+                if(index >= 0) window.appState.dbWorkers[index] = workerData;
+                else window.appState.dbWorkers.push(workerData);
 
-        window.savePoints = (e, workerId) => {
-            e.preventDefault();
-            appState.data.points.push({
-                id: generateId(),
-                workerId: workerId,
-                points: document.getElementById('p-val').value,
-                type: document.getElementById('p-type').value,
-                reason: document.getElementById('p-reason').value,
-                notes: document.getElementById('p-notes').value,
-                date: getTodayStr(),
-                month: getCurrentMonthStr(),
-                evaluator: appState.currentUser.name
-            });
-            saveData();
-            showToast('Puntuación registrada');
-            window.closeModal();
-            renderApp();
-        };
+                if(window.appState.selectedWorker && window.appState.selectedWorker.id === formId) {
+                    window.appState.selectedWorker = workerData;
+                }
 
-        window.closeModal = () => {
-            document.getElementById('modal-container').innerHTML = '';
-        };
-
-        window.handlePdfUpload = (e, workerId) => {
-            const file = e.target.files[0];
-            if(!file) return;
-            if(file.size > 2 * 1024 * 1024) return showToast('El PDF debe pesar menos de 2MB', 'error');
-            if(file.type !== 'application/pdf') return showToast('Solo formato PDF', 'error');
-            
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                appState.data.documents.push({
-                    id: generateId(),
-                    workerId: workerId,
-                    name: file.name,
-                    data: ev.target.result,
-                    date: getTodayStr()
-                });
-                saveData();
-                showToast('Documento subido');
-                renderApp();
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.deleteDoc = (docId) => {
-            if(confirm('¿Seguro que deseas eliminar este documento?')) {
-                appState.data.documents = appState.data.documents.filter(d => d.id !== docId);
-                saveData();
-                showToast('Documento eliminado');
-                renderApp();
-            }
-        };
-
-        window.changeMonth = (e) => {
-            appState.selectedMonth = e.target.value;
-            renderApp();
-        };
-
-        function renderApp() {
-            const appDiv = document.getElementById('app');
-            
-            if (appState.currentView === 'login' || !appState.currentUser) {
-                appDiv.innerHTML = renderLogin();
-            } else {
-                let contentHTML = '';
-                if(appState.currentView === 'dashboard') contentHTML = renderDashboard();
-                else if(appState.currentView === 'workers') contentHTML = renderWorkers();
-                else if(appState.currentView === 'profile') contentHTML = renderProfile(appState.viewParams.workerId);
-                else if(appState.currentView === 'ranking') contentHTML = renderRanking();
+                window.closeWorkerModal();
+                window.showToast('Trabajador guardado con éxito');
                 
-                appDiv.innerHTML = renderLayout(contentHTML);
+                if (window.appState.currentView === 'directory') window.setView('directory');
+                if (window.appState.currentView === 'profile') window.setView('profile');
+            } catch (error) {
+                window.showToast('Error al guardar en Firebase', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerText = 'Guardar';
             }
-            
-            if(window.lucide) window.lucide.createIcons();
-        }
+        };
 
-        window.onload = () => {
-            loadData();
-            loadSession();
-            renderApp();
+        // UTILIDADES
+        window.copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+                window.showToast('Copiado al portapapeles');
+            });
+        };
+
+        window.showToast = (msg, type = 'success') => {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            const icon = document.getElementById('toast-icon');
+            icon.className = type === 'success' ? 'fas fa-check-circle text-[#7be4af]' : 'fas fa-exclamation-circle text-red-400';
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
         };
     </script>
 </body>
