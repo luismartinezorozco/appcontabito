@@ -2,1108 +2,961 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
     <title>HR Events V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #0d4e46; }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Modal Backdrop */
-        .modal-backdrop {
-            position: fixed; inset: 0; background-color: rgba(13, 78, 70, 0.8);
-            backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-        }
-        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
-        .modal-content {
-            background: white; width: 100%; max-width: 32rem; border-radius: 1.5rem; max-height: 90vh;
-            display: flex; flex-direction: column; transform: scale(0.95); transition: transform 0.2s ease;
-            overflow: hidden;
-        }
-        .modal-backdrop.active .modal-content { transform: scale(1); }
+        /* Toast animation classes */
+        .toast-enter { transform: translateY(-100%); opacity: 0; }
+        .toast-enter-active { transform: translateY(0); opacity: 1; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .toast-exit { opacity: 1; }
+        .toast-exit-active { opacity: 0; transition: all 0.3s ease-out; }
     </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#0d4e46',
+                        light: '#146459',
+                        mint: '#7be4af',
+                        minthover: '#66d19c'
+                    },
+                    borderRadius: {
+                        '4xl': '2rem'
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="overflow-hidden">
+<body class="text-gray-800 antialiased overflow-hidden h-[100dvh] flex flex-col relative">
+    
+    <div id="toast-container" class="fixed top-4 right-4 left-4 md:left-auto md:w-80 z-[100] flex flex-col gap-2 pointer-events-none"></div>
+    
+    <div id="app" class="h-full w-full"></div>
 
-    <div id="login-screen" class="fixed inset-0 min-h-[100dvh] bg-[#0d4e46] flex flex-col items-center justify-center p-6 fade-in z-[300]">
-        <div class="w-20 h-20 bg-[#7be4af] rounded-3xl flex items-center justify-center text-[#0d4e46] mb-8 shadow-[0_0_40px_rgba(123,228,175,0.3)]">
-           <i data-lucide="briefcase" style="width: 40px; height: 40px;"></i>
-        </div>
-        <h1 class="text-4xl font-black text-white mb-2 tracking-tight text-center">HR Events</h1>
-        <p class="text-[#7be4af] font-medium mb-10 text-center max-w-sm">Sistema centralizado de gestión de talento, disponibilidad y rendimiento.</p>
-        
-        <form onsubmit="window.handleLogin(event)" class="bg-white rounded-3xl p-8 w-full max-w-sm text-center shadow-lg">
-          <h2 class="text-2xl font-black text-[#0d4e46] mb-2">Iniciar Sesión</h2>
-          <p class="text-sm text-gray-500 mb-6">Ingresa con tu número de cédula</p>
-          
-          <div class="text-left mb-6">
-              <label class="block text-xs font-bold text-gray-500 mb-2">Número de Cédula</label>
-              <input type="text" id="login-cedula" required placeholder="Ej: 123456789" class="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:border-[#7be4af] focus:ring-2 focus:ring-[#7be4af]/20 font-medium" />
-          </div>
-          
-          <button type="submit" class="w-full bg-[#7be4af] text-[#0d4e46] py-3.5 rounded-xl font-black hover:bg-[#66d19c] transition-colors shadow-lg shadow-[#7be4af]/30">
-              Ingresar al Portal
-          </button>
-
-          <div class="mt-6 p-4 bg-blue-50 rounded-xl border border-blue-100 text-left">
-              <p class="text-xs text-blue-800 font-bold mb-1">Cédulas de prueba (Local):</p>
-              <p class="text-xs text-blue-600 font-medium">Admin: <span class="font-bold">123456789</span></p>
-              <p class="text-xs text-blue-600 font-medium">Trabajador: <span class="font-bold">10203040</span></p>
-          </div>
-        </form>
-    </div>
-
-    <div id="app-layout" class="hidden flex h-[100dvh] w-full bg-[#0d4e46] overflow-hidden relative">
-        
-        <!-- SIDEBAR (Desktop) -->
-        <div class="hidden md:flex flex-col w-72 bg-[#0d4e46] text-white pt-8 pb-6 px-6 border-r border-[#146459] relative z-20 shrink-0">
-            <div class="mb-10 flex items-center gap-3">
-                <div class="w-10 h-10 bg-[#7be4af] rounded-xl flex items-center justify-center text-[#0d4e46]">
-                    <i data-lucide="briefcase" class="w-6 h-6"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-black tracking-tight leading-tight">HR Events</h2>
-                    <p class="text-[10px] text-[#7be4af] uppercase font-bold tracking-widest">Portal V2</p>
-                </div>
-            </div>
-
-            <nav id="desktop-nav" class="flex-1 space-y-2">
-                <!-- Nav items injected via JS -->
-            </nav>
-
-            <div class="mt-auto bg-[#146459] p-4 rounded-3xl border border-[#146459]/50">
-                <div class="flex items-center gap-3 mb-3">
-                    <div id="user-avatar" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#0d4e46] font-bold">U</div>
-                    <div class="flex-1 min-w-0">
-                      <p id="user-name" class="text-sm font-bold truncate">Usuario</p>
-                      <p id="user-role" class="text-[10px] text-[#7be4af] font-black uppercase tracking-wider">Rol</p>
-                    </div>
-                </div>
-                <button onclick="window.appSignOut()" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-gray-300 hover:text-white bg-[#0d4e46] py-2 rounded-xl transition-colors">
-                    <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
-                </button>
-            </div>
-        </div>
-
-        <!-- MAIN CONTENT AREA -->
-        <div class="flex-1 flex flex-col h-[100dvh] bg-[#f8fafc] md:rounded-l-[2.5rem] overflow-hidden relative shadow-2xl md:border-l-8 border-[#7be4af]/20">
-            
-            <!-- Topbar (Desktop) -->
-            <div class="hidden md:flex h-20 items-center justify-between px-8 bg-white border-b border-gray-100 shrink-0">
-                <div class="flex items-center gap-2 text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
-                    <i data-lucide="search" class="w-4 h-4"></i>
-                    <span class="text-sm font-medium">Búsqueda rápida...</span>
-                </div>
-            </div>
-
-            <!-- Dynamic Content Container -->
-            <div id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8 relative pb-24 md:pb-8">
-                <!-- Vistas dinámicas inyectadas aquí -->
-            </div>
-
-            <!-- BOTTOM NAV (Mobile) -->
-            <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 rounded-t-4xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-[200]">
-                <div id="mobile-nav" class="flex justify-between items-center max-w-sm mx-auto">
-                    <!-- Nav items injected via JS -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Worker Form Modal -->
-    <div id="worker-modal" class="modal-backdrop">
-        <div class="modal-content">
-            <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
-                <h3 id="worker-modal-title" class="font-bold text-xl text-[#0d4e46]">Nuevo Trabajador</h3>
-                <button onclick="document.getElementById('worker-modal').classList.remove('active')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors">
-                    <i data-lucide="x" class="w-5 h-5"></i>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 hide-scrollbar">
-                <form id="worker-form" onsubmit="window.saveWorker(event)" class="space-y-6">
-                    <input type="hidden" id="w-id">
-                    
-                    <div>
-                        <h4 class="font-bold text-[#0d4e46] border-b pb-2 mb-4">Información Personal</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Nombre Completo</label><input required id="w-name" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Cédula</label><input required id="w-idNumber" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono (WhatsApp)</label><input required id="w-phone" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Correo Electrónico</label><input type="email" id="w-email" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Ciudad</label><input id="w-city" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Dirección</label><input id="w-address" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Contacto Emergencia</label><input id="w-emergContact" class="w-full border rounded-xl p-2.5 bg-red-50"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono Emergencia</label><input id="w-emergPhone" class="w-full border rounded-xl p-2.5 bg-red-50"></div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-bold text-[#0d4e46] border-b pb-2 mb-4 mt-6">Información Laboral</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1">Cargo Principal</label>
-                                <select id="w-role" class="w-full border rounded-xl p-2.5">
-                                    <option value="Animador">Animador</option>
-                                    <option value="Coordinador">Coordinador</option>
-                                    <option value="Logística">Logística</option>
-                                    <option value="DJ">DJ</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-gray-500 mb-1">Estado</label>
-                                <select id="w-status" class="w-full border rounded-xl p-2.5">
-                                    <option value="active">Activo</option>
-                                    <option value="inactive">Inactivo</option>
-                                </select>
-                            </div>
-                            <div id="w-systemRole-container" class="col-span-1 md:col-span-2 hidden">
-                                <label class="block text-xs font-bold text-purple-700 mb-1">Acceso al Sistema (Rol de Usuario)</label>
-                                <select id="w-systemRole" class="w-full border-purple-200 bg-purple-50 rounded-xl p-2.5 text-purple-900 font-medium">
-                                    <option value="WORKER">Trabajador (Solo ve su información)</option>
-                                    <option value="COORD">Coordinador (Puede evaluar)</option>
-                                    <option value="HR">Recursos Humanos (Gestión de equipo)</option>
-                                    <option value="ADMIN">Administrador (Acceso Total)</option>
-                                </select>
-                            </div>
-                            <div class="col-span-1 md:col-span-2">
-                                <label class="block text-xs font-bold text-gray-500 mb-2">Especialidades (Click para seleccionar)</label>
-                                <div id="w-specialties-container" class="flex flex-wrap gap-2"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-bold text-[#0d4e46] border-b pb-2 mb-4 mt-6">Disponibilidad Semanal (Días y Horarios)</h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Lunes</label><input id="w-disp-mon" placeholder="Ej: Todo el día" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Martes</label><input id="w-disp-tue" placeholder="Ej: 2pm a 6pm" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Miércoles</label><input id="w-disp-wed" placeholder="Ej: No disponible" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Jueves</label><input id="w-disp-thu" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Viernes</label><input id="w-disp-fri" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Sábado</label><input id="w-disp-sat" class="w-full border rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Domingo</label><input id="w-disp-sun" class="w-full border rounded-xl p-2.5"></div>
-                        </div>
-                    </div>
-
-                    <div id="bank-section-form" style="display:none;">
-                        <h4 class="font-bold text-purple-900 border-b border-purple-100 pb-2 mb-4 mt-6 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Información Bancaria (Privada)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-2xl border border-purple-100">
-                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Banco</label><input id="w-bankName" class="w-full border-purple-200 rounded-xl p-2.5"></div>
-                            <div>
-                                <label class="block text-xs font-bold text-purple-800 mb-1">Tipo de Cuenta</label>
-                                <select id="w-bankType" class="w-full border-purple-200 rounded-xl p-2.5">
-                                    <option value="">Seleccione...</option><option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option>
-                                </select>
-                            </div>
-                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Número de Cuenta</label><input id="w-bankNum" class="w-full border-purple-200 rounded-xl p-2.5"></div>
-                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Titular de la cuenta</label><input id="w-bankOwner" class="w-full border-purple-200 rounded-xl p-2.5"></div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end pt-4 pb-4">
-                        <button type="submit" class="bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-xl font-bold hover:bg-[#66d19c] transition-colors shadow-lg">Guardar Trabajador</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Points Modal -->
-    <div id="points-modal" class="modal-backdrop">
-        <div class="modal-content p-6">
-            <h3 class="font-bold text-xl text-[#0d4e46] mb-4">Evaluar Rendimiento</h3>
-            <form onsubmit="window.savePoints(event)" class="space-y-4">
-                <div class="flex gap-2">
-                    <button type="button" id="btn-pt-pos" onclick="window.setPointType('positive')" class="flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-green-50 border-green-500 text-green-700 transition-all"><i data-lucide="trending-up" class="w-4 h-4"></i> Positivo</button>
-                    <button type="button" id="btn-pt-neg" onclick="window.setPointType('negative')" class="flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500 transition-all"><i data-lucide="trending-down" class="w-4 h-4"></i> Negativo</button>
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Puntos</label>
-                    <input type="number" id="pt-amount" required min="1" value="10" class="w-full border border-gray-300 rounded-xl p-3 font-bold text-xl">
-                </div>
-                <div>
-                    <label class="block text-sm font-bold text-gray-700 mb-2">Motivo</label>
-                    <input type="text" id="pt-reason" required placeholder="Ej. Excelente actitud..." class="w-full border border-gray-300 rounded-xl p-3">
-                </div>
-                <div class="flex justify-end gap-2 pt-4">
-                    <button type="button" onclick="document.getElementById('points-modal').classList.remove('active')" class="px-4 py-2 text-gray-500 font-bold hover:bg-gray-100 rounded-xl transition-colors">Cancelar</button>
-                    <button type="submit" class="bg-[#0d4e46] text-white px-6 py-2 rounded-xl font-bold">Guardar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Message/Toast Container -->
-    <div id="toast-container" class="fixed bottom-20 md:bottom-10 left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-2 pointer-events-none"></div>
+    <!-- Modals Containers -->
+    <div id="modal-container" class="relative z-[60]"></div>
 
     <script>
-        const DB_PREFIX = 'hr_v2_';
+        const STORAGE_KEY = 'hr_v2_data';
+        const SESSION_KEY = 'hr_v2_session';
 
-        // Application Global State
-        window.appState = {
-            user: null, 
-            role: 'WORKER',
-            userProfile: { name: '', uid: '' },
-            currentView: 'dashboard',
-            selectedWorkerId: null,
-            activeProfileTab: 'personal',
-            selectedDate: '', 
-            selectedMonth: '',
-            
-            // In-Memory Data Collections (Loaded from LocalStorage)
-            workers: [],
-            pointMovements: [],
-            formSpecialties: [],
-            pointType: 'positive'
-        };
-
-        const getTodayStr = () => {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        };
-        const getCurrentMonthStr = () => {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        };
-        const generateId = () => Math.random().toString(36).substring(2, 15);
-
-        window.showToast = (message, type = 'success') => {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `px-4 py-3 rounded-xl text-sm font-bold shadow-lg transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-2 ${
-                type === 'error' ? 'bg-red-500 text-white' : 'bg-[#7be4af] text-[#0d4e46]'
-            }`;
-            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-4 h-4"></i> ${message}`;
-            container.appendChild(toast);
-            lucide.createIcons();
-            
-            requestAnimationFrame(() => toast.classList.remove('translate-y-4', 'opacity-0'));
-            
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-4');
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        };
-
-        function getDb(collectionName) {
-            const data = localStorage.getItem(DB_PREFIX + collectionName);
-            return data ? JSON.parse(data) : [];
-        }
-
-        function setDb(collectionName, data) {
-            localStorage.setItem(DB_PREFIX + collectionName, JSON.stringify(data));
-            syncData();
-        }
-
-        function syncData() {
-            window.appState.workers = getDb('workers');
-            window.appState.pointMovements = getDb('pointMovements');
-            if(window.appState.user) {
-                renderCurrentView();
-            }
-        }
-
-        function seedInitialData() {
-            let workers = getDb('workers');
-            if (workers.length === 0) {
-                console.log("Sembrando datos iniciales...");
-                workers = [
-                    { id: generateId(), name: 'Admin Principal', role: 'Administrador', idNumber: '123456789', phone: '3000000000', email: 'admin@demo.com', city: 'Central', address: 'Oficina', status: 'active', specialties: [], joinDate: '2020-01-01', systemRole: 'ADMIN', schedule: {mon:'', tue:'', wed:'', thu:'', fri:'', sat:'', sun:''} },
-                    { id: generateId(), name: 'Carlos Pérez', role: 'Animador', idNumber: '10203040', phone: '3001234567', email: 'carlos@demo.com', city: 'Bogotá', address: 'Calle Falsa 123', status: 'active', specialties: ['Animador', 'Personajes'], joinDate: '2025-01-15', systemRole: 'WORKER', schedule: {mon:'Todo el día', tue:'Mañanas', wed:'No disponible', thu:'Tardes', fri:'Todo el día', sat:'Todo el día', sun:'No disponible'} }
-                ];
-                localStorage.setItem(DB_PREFIX + 'workers', JSON.stringify(workers));
-                localStorage.setItem(DB_PREFIX + 'pointMovements', JSON.stringify([]));
-            } else {
-                // PARCHE DE SEGURIDAD: Garantizar que el Admin exista siempre.
-                // Si el LocalStorage se corrompió, forzamos la creación del Admin nuevamente.
-                const hasAdmin = workers.find(w => String(w.idNumber) === '123456789');
-                if(!hasAdmin) {
-                    workers.push({ id: generateId(), name: 'Admin Principal', role: 'Administrador', idNumber: '123456789', phone: '3000000000', email: 'admin@demo.com', city: 'Central', address: 'Oficina', status: 'active', specialties: [], joinDate: '2020-01-01', systemRole: 'ADMIN', schedule: {} });
-                    localStorage.setItem(DB_PREFIX + 'workers', JSON.stringify(workers));
-                }
-            }
-        }
-
-        window.onload = () => {
-            window.appState.selectedDate = getTodayStr();
-            window.appState.selectedMonth = getCurrentMonthStr();
-            seedInitialData();
-            
-            const session = localStorage.getItem(DB_PREFIX + 'session');
-            if (session) {
-                const uid = JSON.parse(session).uid;
-                const workers = getDb('workers');
-                const user = workers.find(w => w.id === uid);
-                if (user) {
-                    performLogin(user);
-                    return;
-                }
-            }
-            document.getElementById('login-screen').classList.remove('hidden');
-        };
-
-        window.handleLogin = (e) => {
-            e.preventDefault();
-            const cedula = document.getElementById('login-cedula').value.trim();
-            const workers = getDb('workers');
-            
-            // Forzar comparación como String para evitar errores de tipo en navegadores
-            const user = workers.find(w => String(w.idNumber) === String(cedula));
-
-            if (user) {
-                // Si el usuario es viejo y no tiene systemRole, se lo asignamos
-                if (!user.systemRole) {
-                    user.systemRole = user.role === 'Administrador' ? 'ADMIN' : 'WORKER';
-                }
-                performLogin(user);
-            } else {
-                window.showToast('Cédula no encontrada en el sistema.', 'error');
-            }
-        };
-
-        function performLogin(user) {
-            window.appState.user = { uid: user.id };
-            window.appState.role = user.systemRole || 'WORKER';
-            window.appState.userProfile = { name: user.name, uid: user.id };
-            
-            localStorage.setItem(DB_PREFIX + 'session', JSON.stringify({ uid: user.id }));
-
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-layout').classList.remove('hidden');
-            
-            document.getElementById('user-name').innerText = user.name;
-            document.getElementById('user-avatar').innerText = user.name.substring(0,2).toUpperCase();
-            document.getElementById('user-role').innerText = window.appState.role;
-            
-            syncData();
-            
-            if(window.appState.role === 'WORKER') {
-                window.appState.selectedWorkerId = user.id;
-                window.appState.activeProfileTab = 'points';
-                window.navigateTo('profile');
-            } else {
-                window.navigateTo('dashboard');
-            }
-        }
-
-        window.appSignOut = () => {
-            localStorage.removeItem(DB_PREFIX + 'session');
-            window.location.reload();
-        };
-
-        const navItems = [
-            { id: 'dashboard', icon: 'layout-dashboard', label: 'Inicio', roles: ['ADMIN', 'HR', 'COORD'] },
-            { id: 'workers', icon: 'users', label: 'Directorio', roles: ['ADMIN', 'HR', 'COORD'] },
-            { id: 'performance', icon: 'star', label: 'Ranking', roles: ['ADMIN', 'HR', 'COORD'] },
-            { id: 'profile', icon: 'user', label: 'Mi Perfil', roles: ['WORKER'] }
-        ];
-
-        function updateNavigation() {
-            const desktopNav = document.getElementById('desktop-nav');
-            const mobileNav = document.getElementById('mobile-nav');
-            const allowedItems = navItems.filter(item => item.roles.includes(window.appState.role));
-
-            if(desktopNav) {
-                desktopNav.innerHTML = allowedItems.map(item => `
-                    <button onclick="window.navigateTo('${item.id}')"
-                        class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af] text-[#0d4e46] shadow-lg shadow-[#7be4af]/20' : 'text-gray-300 hover:bg-[#146459] hover:text-white'}">
-                        <i data-lucide="${item.icon}" class="w-5 h-5"></i> ${item.label}
-                    </button>
-                `).join('');
-            }
-
-            if(mobileNav) {
-                // Max 4 en móvil para nav
-                let mobileHtml = allowedItems.slice(0, 4).map(item => `
-                    <button onclick="window.navigateTo('${item.id}')" 
-                        class="flex flex-col items-center gap-1.5 transition-colors ${window.appState.currentView === item.id ? 'text-[#0d4e46]' : 'text-gray-400'}">
-                        <div class="p-2.5 rounded-2xl transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af]/20 text-[#0d4e46]' : ''}">
-                            <i data-lucide="${item.icon}" class="w-5 h-5"></i>
-                        </div>
-                        <span class="text-[10px] font-bold">${item.label}</span>
-                    </button>
-                `).join('');
-
-                // Agregamos explícitamente botón de salir para móvil
-                mobileHtml += `
-                    <button onclick="window.appSignOut()" class="flex flex-col items-center gap-1.5 transition-colors text-red-400 hover:text-red-600">
-                        <div class="p-2.5 rounded-2xl transition-all">
-                            <i data-lucide="log-out" class="w-5 h-5"></i>
-                        </div>
-                        <span class="text-[10px] font-bold">Salir</span>
-                    </button>
-                `;
-                mobileNav.innerHTML = mobileHtml;
-            }
-            lucide.createIcons();
-        }
-
-        window.navigateTo = (view) => {
-            // REGLA DE SEGURIDAD ESTRICTA PARA EVITAR FILTRACIÓN:
-            // Bloquea cualquier intento de navegación fuera del perfil si el rol es WORKER
-            if (window.appState.role === 'WORKER') {
-                view = 'profile';
-                window.appState.selectedWorkerId = window.appState.user.uid;
-            }
-
-            window.appState.currentView = view;
-            if(view !== 'profile') {
-                window.appState.selectedWorkerId = null;
-            }
-            updateNavigation();
-            renderCurrentView();
-        };
-
-        window.viewWorkerProfile = (id) => {
-            window.appState.selectedWorkerId = id;
-            window.appState.currentView = 'profile';
-            window.appState.activeProfileTab = 'personal';
-            renderCurrentView();
-        };
-
-        window.changeProfileTab = (tabId) => {
-            window.appState.activeProfileTab = tabId;
-            renderCurrentView();
+        const appState = {
+            currentUser: null,
+            currentView: 'login', // login, dashboard, workers, profile, ranking
+            viewParams: {},
+            selectedMonth: getCurrentMonthStr(),
+            data: {
+                workers: [],
+                points: [],
+                documents: []
+            },
+            formSpecialties: []
         };
 
         const specialtiesList = ["Animador", "Recreacionista", "Personajes", "DJ", "Fotografía", "Video", "Logística", "Montaje", "Coordinación", "Pintucaritas"];
 
-        window.toggleSpecialty = (sp) => {
-            const idx = window.appState.formSpecialties.indexOf(sp);
-            if(idx > -1) window.appState.formSpecialties.splice(idx, 1);
-            else window.appState.formSpecialties.push(sp);
-            renderSpecialtiesForm();
-        };
-
-        function renderSpecialtiesForm() {
-            const c = document.getElementById('w-specialties-container');
-            if(!c) return;
-            c.innerHTML = specialtiesList.map(sp => {
-                const isActive = window.appState.formSpecialties.includes(sp);
-                return `<button type="button" onclick="window.toggleSpecialty('${sp}')" 
-                    class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isActive ? 'bg-[#146459] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">
-                    ${sp}
-                </button>`;
-            }).join('');
+        // Utilities
+        function getTodayStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         }
 
-        window.openWorkerForm = (id = null) => {
-            const isEdit = id != null;
-            document.getElementById('worker-modal-title').innerText = isEdit ? "Editar Trabajador" : "Nuevo Trabajador";
-            const form = document.getElementById('worker-form');
-            form.reset();
-            window.appState.formSpecialties = [];
+        function getCurrentMonthStr() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        }
+
+        function generateId() {
+            return Math.random().toString(36).substring(2, 15);
+        }
+
+        function showToast(msg, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-3 rounded-xl text-white font-bold text-sm shadow-lg flex items-center gap-2 toast-enter ${type === 'success' ? 'bg-mint text-dark' : 'bg-red-500'}`;
+            toast.innerHTML = `<i data-lucide="${type === 'success' ? 'check-circle' : 'alert-circle'}" class="w-5 h-5"></i> ${msg}`;
+            container.appendChild(toast);
+            if(window.lucide) window.lucide.createIcons({root: toast});
             
-            const bankSection = document.getElementById('bank-section-form');
-            const roleSection = document.getElementById('w-systemRole-container');
+            requestAnimationFrame(() => {
+                toast.classList.remove('toast-enter');
+                toast.classList.add('toast-enter-active');
+            });
             
-            if(['ADMIN', 'HR'].includes(window.appState.role)) {
-                bankSection.style.display = 'block';
-                roleSection.style.display = 'block';
+            setTimeout(() => {
+                toast.classList.remove('toast-enter-active');
+                toast.classList.add('toast-exit', 'toast-exit-active');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function copyText(text) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => showToast('Copiado al portapapeles'));
             } else {
-                bankSection.style.display = 'none';
-                roleSection.style.display = 'none';
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.opacity = "0";
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast('Copiado al portapapeles');
+                } catch (err) {
+                    showToast('Error al copiar', 'error');
+                }
+                document.body.removeChild(textArea);
             }
+        }
 
-            if(isEdit) {
-                const w = window.appState.workers.find(x => x.id === id);
-                if(w) {
-                    document.getElementById('w-id').value = w.id;
-                    document.getElementById('w-name').value = w.name || '';
-                    document.getElementById('w-idNumber').value = w.idNumber || '';
-                    document.getElementById('w-phone').value = w.phone || '';
-                    document.getElementById('w-email').value = w.email || '';
-                    document.getElementById('w-city').value = w.city || '';
-                    document.getElementById('w-address').value = w.address || '';
-                    document.getElementById('w-emergContact').value = w.emergencyContact || '';
-                    document.getElementById('w-emergPhone').value = w.emergencyPhone || '';
-                    document.getElementById('w-role').value = w.role || '';
-                    document.getElementById('w-status').value = w.status || 'active';
-                    document.getElementById('w-systemRole').value = w.systemRole || 'WORKER';
-                    window.appState.formSpecialties = w.specialties || [];
+        function loadData() {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                appState.data = JSON.parse(raw);
+            }
+            
+            // Auto-seed Admin if missing
+            if (!appState.data.workers.some(w => w.role === 'ADMIN')) {
+                appState.data.workers.push({
+                    id: 'admin_master',
+                    name: 'Administrador Principal',
+                    idNumber: '123456',
+                    role: 'ADMIN',
+                    status: 'active',
+                    phone: '3000000000',
+                    email: '',
+                    city: 'Central',
+                    address: '',
+                    emergencyContact: '',
+                    emergencyPhone: '',
+                    jobRole: 'Director',
+                    specialties: [],
+                    availabilityText: 'Siempre disponible',
+                    bank: { bankName: '', type: '', number: '', owner: '' },
+                    photo: '',
+                    joinDate: getTodayStr()
+                });
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appState.data));
+        }
+
+        function loadSession() {
+            const raw = sessionStorage.getItem(SESSION_KEY);
+            if (raw) {
+                const session = JSON.parse(raw);
+                const user = appState.data.workers.find(w => w.id === session.id);
+                if (user) {
+                    appState.currentUser = user;
                     
-                    const sched = w.schedule || {};
-                    document.getElementById('w-disp-mon').value = sched.mon || '';
-                    document.getElementById('w-disp-tue').value = sched.tue || '';
-                    document.getElementById('w-disp-wed').value = sched.wed || '';
-                    document.getElementById('w-disp-thu').value = sched.thu || '';
-                    document.getElementById('w-disp-fri').value = sched.fri || '';
-                    document.getElementById('w-disp-sat').value = sched.sat || '';
-                    document.getElementById('w-disp-sun').value = sched.sun || '';
-
-                    if(w.bank && ['ADMIN', 'HR'].includes(window.appState.role)) {
-                        document.getElementById('w-bankName').value = w.bank.bankName || '';
-                        document.getElementById('w-bankType').value = w.bank.type || '';
-                        document.getElementById('w-bankNum').value = w.bank.number || '';
-                        document.getElementById('w-bankOwner').value = w.bank.owner || '';
+                    // Restrict worker navigation on reload
+                    if (user.role === 'WORKER') {
+                        appState.currentView = 'profile';
+                        appState.viewParams = { workerId: user.id, activeTab: 'rendimiento' };
+                    } else {
+                        appState.currentView = 'dashboard';
                     }
                 }
             }
-            renderSpecialtiesForm();
-            document.getElementById('worker-modal').classList.add('active');
+        }
+
+        window.login = (e) => {
+            e.preventDefault();
+            const cedula = document.getElementById('l-cedula').value.trim();
+            if (!cedula) return showToast('Ingresa tu cédula', 'error');
+
+            const user = appState.data.workers.find(w => w.idNumber === cedula);
+            if (!user) {
+                return showToast('Credenciales incorrectas o usuario no encontrado', 'error');
+            }
+            if (user.status !== 'active') {
+                return showToast('Usuario inactivo. Contacta a administración.', 'error');
+            }
+
+            appState.currentUser = user;
+            sessionStorage.setItem(SESSION_KEY, JSON.stringify({ id: user.id }));
+            
+            if (user.role === 'WORKER') {
+                setView('profile', { workerId: user.id, activeTab: 'rendimiento' });
+            } else {
+                setView('dashboard');
+            }
+            showToast(`Bienvenido, ${user.name.split(' ')[0]}`);
+        };
+
+        window.logout = () => {
+            appState.currentUser = null;
+            sessionStorage.removeItem(SESSION_KEY);
+            setView('login');
+        };
+
+        window.setView = (view, params = {}) => {
+            // Strict Worker Guard
+            if (appState.currentUser?.role === 'WORKER' && view !== 'profile' && view !== 'login') {
+                view = 'profile';
+                params = { workerId: appState.currentUser.id, activeTab: 'rendimiento' };
+            }
+
+            appState.currentView = view;
+            appState.viewParams = params;
+            renderApp();
+        };
+
+        function renderLogin() {
+            return `
+                <div class="min-h-full bg-dark flex flex-col items-center justify-center p-6 animate-in fade-in zoom-in duration-300">
+                    <div class="w-20 h-20 bg-mint rounded-3xl flex items-center justify-center text-dark mb-8 shadow-[0_0_40px_rgba(123,228,175,0.3)]">
+                        <i data-lucide="briefcase" class="w-10 h-10"></i>
+                    </div>
+                    <h1 class="text-4xl font-black text-white mb-2 tracking-tight text-center">HR Events</h1>
+                    <p class="text-mint font-medium mb-10 text-center max-w-sm">Sistema centralizado de talento y rendimiento.</p>
+                    
+                    <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-xl">
+                        <h2 class="text-xl font-bold text-gray-800 mb-6 text-center">Iniciar Sesión</h2>
+                        <form onsubmit="window.login(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Cédula o Documento</label>
+                                <div class="relative">
+                                    <i data-lucide="user" class="absolute left-4 top-3.5 text-gray-400 w-5 h-5"></i>
+                                    <input type="text" id="l-cedula" class="w-full border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-mint focus:ring-2 focus:ring-mint/20" placeholder="Ej. 123456" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full bg-mint text-dark font-bold rounded-2xl py-3.5 hover:bg-minthover transition-colors shadow-lg">Ingresar al Sistema</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderLayout(contentHTML) {
+            const u = appState.currentUser;
+            const isWorker = u.role === 'WORKER';
+
+            const navItems = [
+                { id: 'dashboard', icon: 'layout-dashboard', label: 'Inicio', roles: ['ADMIN', 'HR', 'COORD'] },
+                { id: 'workers', icon: 'users', label: 'Equipo', roles: ['ADMIN', 'HR', 'COORD'] },
+                { id: 'ranking', icon: 'star', label: 'Ranking', roles: ['ADMIN', 'HR', 'COORD'] }
+            ].filter(i => i.roles.includes(u.role));
+
+            return `
+                <div class="flex h-full w-full bg-dark overflow-hidden">
+                    <!-- SIDEBAR (PC) -->
+                    <div class="hidden md:flex flex-col w-72 bg-dark text-white pt-8 pb-6 px-6 border-r border-light relative z-20">
+                        <div class="mb-10 flex items-center gap-3">
+                            <div class="w-10 h-10 bg-mint rounded-xl flex items-center justify-center text-dark shrink-0">
+                                <i data-lucide="briefcase" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-xl font-black tracking-tight leading-tight">HR Events</h2>
+                                <p class="text-[10px] text-mint uppercase font-bold tracking-widest">Portal V2</p>
+                            </div>
+                        </div>
+
+                        <nav class="flex-1 space-y-2">
+                            ${isWorker 
+                                ? `<button onclick="window.setView('profile', {workerId: '${u.id}', activeTab: 'rendimiento'})" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all bg-mint text-dark shadow-lg shadow-mint/20"><i data-lucide="user" class="w-5 h-5"></i> Mi Perfil</button>`
+                                : navItems.map(item => `
+                                    <button onclick="window.setView('${item.id}')" class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'bg-mint text-dark shadow-lg shadow-mint/20' : 'text-gray-300 hover:bg-light hover:text-white'}">
+                                        <i data-lucide="${item.icon}" class="w-5 h-5"></i> ${item.label}
+                                    </button>
+                                `).join('')
+                            }
+                        </nav>
+
+                        <div class="mt-auto bg-light p-4 rounded-3xl border border-light/50">
+                            <div class="flex items-center gap-3 mb-3">
+                                ${u.photo 
+                                    ? `<img src="${u.photo}" class="w-10 h-10 rounded-full object-cover shrink-0">`
+                                    : `<div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-dark font-bold shrink-0">${u.name.substring(0,2).toUpperCase()}</div>`
+                                }
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-bold truncate">${u.name}</p>
+                                    <p class="text-[10px] text-mint font-black uppercase tracking-wider">${u.role}</p>
+                                </div>
+                            </div>
+                            <button onclick="window.logout()" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-gray-300 hover:text-white bg-dark py-2 rounded-xl transition-colors">
+                                <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- MAIN CONTENT -->
+                    <div class="flex-1 flex flex-col h-full bg-[#f8fafc] md:rounded-l-[2.5rem] overflow-hidden relative shadow-2xl md:border-l-8 border-mint/20">
+                        <!-- Topbar PC -->
+                        <div class="hidden md:flex h-20 items-center justify-end px-8 bg-white border-b border-gray-100 shrink-0">
+                            <div class="flex items-center gap-2 text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-100 font-medium text-sm">
+                                <i data-lucide="calendar" class="w-4 h-4"></i> ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Content Area -->
+                        <div class="flex-1 overflow-y-auto p-6 md:p-8 relative hide-scrollbar pb-24 md:pb-8">
+                            ${contentHTML}
+                        </div>
+
+                        <!-- BOTTOM NAV (Mobile) -->
+                        <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 rounded-t-4xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-50">
+                            <div class="flex justify-around items-center max-w-md mx-auto">
+                                ${isWorker 
+                                    ? `
+                                        <button onclick="window.setView('profile', {workerId: '${u.id}', activeTab: 'rendimiento'})" class="flex flex-col items-center gap-1 transition-colors text-dark">
+                                            <div class="p-2.5 rounded-2xl bg-mint/20 text-dark"><i data-lucide="user" class="w-6 h-6 stroke-[2.5px]"></i></div>
+                                            <span class="text-[10px] font-bold">Mi Perfil</span>
+                                        </button>
+                                        <button onclick="window.logout()" class="flex flex-col items-center gap-1 transition-colors text-gray-400 hover:text-red-500">
+                                            <div class="p-2.5 rounded-2xl"><i data-lucide="log-out" class="w-6 h-6 stroke-2"></i></div>
+                                            <span class="text-[10px] font-bold">Salir</span>
+                                        </button>
+                                    `
+                                    : navItems.map(item => `
+                                        <button onclick="window.setView('${item.id}')" class="flex flex-col items-center gap-1 transition-colors ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'text-dark' : 'text-gray-400'}">
+                                            <div class="p-2.5 rounded-2xl transition-all ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'bg-mint/20 text-dark' : ''}">
+                                                <i data-lucide="${item.icon}" class="w-6 h-6 ${appState.currentView === item.id || (item.id === 'workers' && appState.currentView === 'profile') ? 'stroke-[2.5px]' : 'stroke-2'}"></i>
+                                            </div>
+                                            <span class="text-[10px] font-bold">${item.label}</span>
+                                        </button>
+                                    `).join('')
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboard() {
+            const activeWorkers = appState.data.workers.filter(w => w.status === 'active').length;
+            
+            // Calculate avg points for current month
+            const monthlyPoints = appState.data.points.filter(p => p.month === appState.selectedMonth);
+            const scores = {};
+            monthlyPoints.forEach(p => {
+                scores[p.workerId] = (scores[p.workerId] || 0) + (p.type === 'positive' ? Number(p.points) : -Number(p.points));
+            });
+            const avgPoints = Object.keys(scores).length > 0 ? Math.round(Object.values(scores).reduce((a,b)=>a+b,0) / Object.keys(scores).length) : 0;
+            
+            // Top worker
+            const topWorkerId = Object.keys(scores).sort((a,b) => scores[b] - scores[a])[0];
+            const topWorker = topWorkerId ? appState.data.workers.find(w => w.id === topWorkerId) : null;
+
+            return `
+                <div class="space-y-6 animate-in fade-in duration-300">
+                    <div class="bg-dark md:bg-transparent -mx-6 -mt-6 p-8 md:p-0 md:mx-0 md:mt-0 text-white md:text-dark md:mb-6 rounded-b-4xl md:rounded-none">
+                        <h1 class="text-3xl font-black mb-1">Hola, ${appState.currentUser.name.split(' ')[0]}</h1>
+                        <p class="text-mint md:text-gray-500 font-medium">Resumen administrativo general</p>
+                        
+                        <div class="flex justify-between items-end mt-8 border-b border-light md:border-gray-200 pb-6">
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-mint md:text-dark mb-1">${activeWorkers}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Activos</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-white md:text-mint mb-1">${avgPoints}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Prom. Puntos</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-mint md:text-dark mb-1">${appState.data.documents.length}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 font-medium uppercase tracking-wider">Docs.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div onclick="window.setView('workers')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-mint transition-colors">
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="users" class="w-6 h-6"></i></div>
+                            <div><h3 class="font-bold text-gray-800">Directorio de Equipo</h3><p class="text-sm text-gray-500">Gestionar trabajadores</p></div>
+                        </div>
+                        <div onclick="window.setView('ranking')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm flex items-center gap-4 cursor-pointer hover:border-mint transition-colors">
+                            <div class="w-12 h-12 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center shrink-0"><i data-lucide="star" class="w-6 h-6"></i></div>
+                            <div><h3 class="font-bold text-gray-800">Ranking y Rendimiento</h3><p class="text-sm text-gray-500">Evaluaciones mensuales</p></div>
+                        </div>
+                    </div>
+
+                    ${topWorker ? `
+                        <div>
+                            <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="w-5 h-5 text-mint"></i> Destacado del Mes</h2>
+                            <div class="bg-gradient-to-r from-dark to-light p-6 rounded-3xl text-white flex items-center gap-6 shadow-xl">
+                                <div class="relative">
+                                    ${topWorker.photo ? `<img src="${topWorker.photo}" class="w-20 h-20 rounded-full object-cover border-4 border-white/20">` : `<div class="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center text-2xl font-black border-4 border-white/20">${topWorker.name.substring(0,2).toUpperCase()}</div>`}
+                                    <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 p-1.5 rounded-full shadow-lg border-2 border-white"><i data-lucide="award" class="w-4 h-4"></i></div>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-mint font-black text-xs uppercase tracking-widest mb-1">Líder en Puntos</p>
+                                    <h3 class="text-2xl font-bold truncate">${topWorker.name}</h3>
+                                    <p class="opacity-80 text-sm mt-1">${topWorker.role} • ${scores[topWorker.id]} pts</p>
+                                </div>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderWorkers() {
+            const canEdit = ['ADMIN', 'HR'].includes(appState.currentUser.role);
+            const workersList = appState.data.workers.map(w => `
+                <div onclick="window.setView('profile', {workerId: '${w.id}'})" class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-start gap-4 cursor-pointer hover:border-mint transition-colors">
+                    ${w.photo ? `<img src="${w.photo}" class="w-14 h-14 rounded-2xl object-cover shrink-0">` : `<div class="w-14 h-14 bg-gray-100 text-gray-400 rounded-2xl flex items-center justify-center font-black text-xl shrink-0">${w.name.substring(0,2).toUpperCase()}</div>`}
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between items-start">
+                            <h3 class="font-bold text-gray-800 truncate">${w.name}</h3>
+                            <span class="text-[10px] px-2 py-1 rounded-full font-bold uppercase ${w.status==='active'?'bg-green-50 text-green-600 border border-green-200':'bg-gray-100 text-gray-500'}">${w.status==='active'?'Activo':'Inactivo'}</span>
+                        </div>
+                        <p class="text-sm text-light font-semibold mt-0.5 truncate">${w.jobRole}</p>
+                        <p class="text-xs text-gray-400 truncate mt-1">ID: ${w.idNumber} • ${w.role}</p>
+                    </div>
+                </div>
+            `).join('');
+
+            return `
+                <div class="space-y-6 flex flex-col h-full animate-in fade-in duration-300">
+                    <div class="flex justify-between items-end shrink-0">
+                        <div>
+                            <h1 class="text-2xl font-black text-gray-800">Directorio</h1>
+                            <p class="text-gray-500 text-sm">Personal registrado.</p>
+                        </div>
+                        ${canEdit ? `<button onclick="window.openWorkerModal()" class="bg-mint text-dark px-4 py-2.5 rounded-2xl font-bold shadow-lg hover:bg-minthover flex items-center gap-2 text-sm"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo</button>` : ''}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-y-auto hide-scrollbar pb-4 pr-2">
+                        ${workersList || '<p class="text-gray-400 col-span-full py-10 text-center">No hay trabajadores.</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderProfile(workerId) {
+            const worker = appState.data.workers.find(w => w.id === workerId);
+            if(!worker) return `<p>Error: Trabajador no encontrado</p>`;
+
+            const u = appState.currentUser;
+            const isSelf = u.id === worker.id;
+            const isWorker = u.role === 'WORKER';
+            const canEdit = ['ADMIN', 'HR'].includes(u.role);
+            const canEvaluate = ['ADMIN', 'HR', 'COORD'].includes(u.role);
+            
+            const activeTab = appState.viewParams.activeTab || 'rendimiento';
+
+            // Points logic
+            const workerPoints = appState.data.points.filter(p => p.workerId === worker.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const totalPoints = workerPoints.reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
+            const monthPoints = workerPoints.filter(p => p.month === getCurrentMonthStr()).reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
+
+            // Documents
+            const docs = appState.data.documents.filter(d => d.workerId === worker.id);
+
+            const renderTabContent = () => {
+                if(activeTab === 'rendimiento') {
+                    return `
+                        <div class="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gradient-to-r from-dark to-light p-6 rounded-3xl text-white shadow-lg flex justify-between items-center">
+                                    <div>
+                                        <p class="text-mint font-semibold text-xs uppercase tracking-wider mb-1">Mes Actual (${getCurrentMonthStr()})</p>
+                                        <h3 class="text-4xl font-black">${monthPoints} <span class="text-lg font-medium text-gray-300">pts</span></h3>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs text-gray-300 uppercase tracking-wider mb-1">Histórico Total</p>
+                                        <p class="text-xl font-bold">${totalPoints} pts</p>
+                                    </div>
+                                </div>
+                                ${canEvaluate ? `
+                                    <div class="bg-white p-6 rounded-3xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm">
+                                        <p class="text-sm font-bold text-gray-800 mb-3">Registrar Evaluación</p>
+                                        <button onclick="window.openPointsModal('${worker.id}')" class="w-full bg-mint text-dark font-bold py-3 rounded-2xl flex items-center justify-center gap-2 hover:bg-minthover transition-colors"><i data-lucide="star" class="w-4 h-4"></i> Evaluar Rendimiento</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                            <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+                                <h3 class="font-bold text-gray-800 mb-4">Historial de Movimientos</h3>
+                                <div class="space-y-3">
+                                    ${workerPoints.length === 0 ? '<p class="text-gray-400 text-center py-4 text-sm">No hay registros.</p>' : workerPoints.map(p => `
+                                        <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl gap-3">
+                                            <div class="flex gap-3 items-center">
+                                                <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black shrink-0 ${p.type==='positive'?'bg-green-100 text-green-600':'bg-red-100 text-red-600'}">${p.type==='positive'?'+':'-'}${p.points}</div>
+                                                <div><h4 class="font-bold text-gray-800 text-sm">${p.reason}</h4><p class="text-xs text-gray-500">${p.notes||'Sin observación'}</p></div>
+                                            </div>
+                                            <div class="text-left md:text-right text-[10px] text-gray-400 font-medium space-y-0.5">
+                                                <p class="bg-white px-2 py-1 rounded-md border border-gray-200 inline-block text-gray-600">${p.date}</p>
+                                                <p>Por: ${p.evaluator}</p>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                if(activeTab === 'laboral') {
+                    return `
+                        <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm space-y-6 animate-in slide-in-from-right-4 duration-300">
+                            <div>
+                                <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="user" class="w-4 h-4 text-gray-400"></i> Información Personal</h3>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Documento</p><p class="font-medium text-sm">${worker.idNumber}</p></div>
+                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Teléfono</p><p class="font-medium text-sm">${worker.phone}</p></div>
+                                    <div class="col-span-2"><p class="text-[10px] text-gray-400 font-bold uppercase">Email</p><p class="font-medium text-sm">${worker.email || 'N/A'}</p></div>
+                                    <div class="col-span-2 bg-red-50 p-3 rounded-xl border border-red-100">
+                                        <p class="text-[10px] text-red-400 font-bold uppercase mb-1">Emergencia</p>
+                                        <p class="font-bold text-red-700 text-sm">${worker.emergencyContact} - ${worker.emergencyPhone}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-4 flex items-center gap-2"><i data-lucide="briefcase" class="w-4 h-4 text-gray-400"></i> Perfil Laboral</h3>
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Cargo Principal</p><p class="font-bold text-dark text-base">${worker.jobRole}</p></div>
+                                    <div><p class="text-[10px] text-gray-400 font-bold uppercase">Ingreso</p><p class="font-medium text-sm">${worker.joinDate || 'N/A'}</p></div>
+                                </div>
+                                <div class="mb-4">
+                                    <p class="text-[10px] text-gray-400 font-bold uppercase mb-2">Especialidades</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${worker.specialties?.length ? worker.specialties.map(s => `<span class="bg-mint/20 text-dark px-2.5 py-1 rounded-lg text-xs font-semibold">${s}</span>`).join('') : '<span class="text-xs text-gray-400">Ninguna</span>'}
+                                    </div>
+                                </div>
+                                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                    <p class="text-[10px] text-blue-500 font-bold uppercase mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Días y Horarios Disponibles</p>
+                                    <p class="text-sm text-blue-900 font-medium whitespace-pre-wrap">${worker.availabilityText || 'No especificado.'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                if(activeTab === 'banco' && canEdit) {
+                    return `
+                        <div class="bg-white rounded-3xl border-l-4 border-l-purple-500 p-6 shadow-sm animate-in slide-in-from-right-4 duration-300">
+                            <div class="flex items-center gap-3 mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                                <i data-lucide="shield-alert" class="w-6 h-6 text-purple-600"></i>
+                                <div><h3 class="font-bold text-purple-900 text-sm">Información Confidencial</h3><p class="text-[10px] text-purple-700 mt-0.5">Exclusivo para administración.</p></div>
+                            </div>
+                            ${worker.bank?.bankName ? `
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Banco</p><p class="font-bold text-lg">${worker.bank.bankName}</p></div>
+                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Tipo de Cuenta</p><p class="font-medium">${worker.bank.type}</p></div>
+                                    <div>
+                                        <p class="text-xs text-gray-400 font-semibold uppercase">Número de Cuenta</p>
+                                        <div class="flex items-center gap-2 mt-1">
+                                            <p class="font-mono bg-gray-100 px-3 py-1.5 rounded-lg font-bold">${worker.bank.number}</p>
+                                            <button onclick="window.copyText('${worker.bank.number}')" class="p-1.5 bg-gray-100 text-gray-500 rounded-lg hover:bg-gray-200 hover:text-dark transition-colors" title="Copiar cuenta"><i data-lucide="copy" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                    <div><p class="text-xs text-gray-400 font-semibold uppercase">Titular / Documento</p><p class="font-medium">${worker.bank.owner}</p></div>
+                                </div>
+                            ` : '<p class="text-gray-500 text-sm text-center py-4">No hay información bancaria registrada.</p>'}
+                        </div>
+                    `;
+                }
+                if(activeTab === 'docs') {
+                    return `
+                        <div class="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm animate-in slide-in-from-right-4 duration-300">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="font-bold text-gray-800">Repositorio</h3>
+                                ${canEdit ? `
+                                    <label class="bg-gray-50 border border-gray-200 text-gray-600 px-4 py-2 rounded-xl text-xs font-bold cursor-pointer hover:bg-gray-100 transition-colors flex items-center gap-2 shadow-sm">
+                                        <i data-lucide="upload" class="w-3 h-3"></i> Subir PDF
+                                        <input type="file" accept="application/pdf" class="hidden" onchange="window.handlePdfUpload(event, '${worker.id}')">
+                                    </label>
+                                ` : ''}
+                            </div>
+                            <div class="space-y-3">
+                                ${docs.length === 0 ? '<p class="text-gray-400 text-sm text-center py-6 border border-dashed rounded-2xl">No hay documentos registrados.</p>' : ''}
+                                ${docs.map(doc => `
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+                                        <div class="flex items-center gap-4 flex-1 min-w-0">
+                                            <div class="w-10 h-10 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                                            <div class="min-w-0 flex-1">
+                                                <p class="font-bold text-sm text-gray-800 truncate" title="${doc.name}">${doc.name}</p>
+                                                <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Subido: ${doc.date}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 shrink-0 ml-4">
+                                            <a href="${doc.data}" download="${doc.name}" class="p-2 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors"><i data-lucide="download" class="w-4 h-4"></i></a>
+                                            ${canEdit ? `<button onclick="window.deleteDoc('${doc.id}')" class="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+                return '';
+            };
+
+            return `
+                <div class="flex flex-col h-full animate-in fade-in duration-300">
+                    <div class="flex justify-between items-center mb-6 shrink-0">
+                        ${!isWorker ? `<button onclick="window.setView('workers')" class="flex items-center gap-2 text-gray-500 hover:text-dark font-bold text-sm bg-white px-4 py-2 rounded-xl shadow-sm border border-gray-100 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i> Volver</button>` : `<div></div>`}
+                        <div class="flex gap-2">
+                            ${canEdit ? `<button onclick="window.openWorkerModal('${worker.id}')" class="bg-white border border-gray-200 p-2.5 rounded-xl text-gray-600 hover:text-dark shadow-sm"><i data-lucide="edit" class="w-4 h-4"></i></button>` : ''}
+                            ${!isSelf ? `<a href="https://wa.me/57${worker.phone}" target="_blank" class="bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 shadow-sm hover:bg-[#1ebe5d] transition-colors"><i data-lucide="message-circle" class="w-4 h-4"></i> Contactar</a>` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Header -->
+                    <div class="bg-dark text-white p-6 rounded-3xl flex flex-col md:flex-row items-center gap-6 mb-6 shrink-0 relative overflow-hidden">
+                        ${worker.photo ? `<img src="${worker.photo}" class="w-24 h-24 rounded-full object-cover border-4 border-white/20 relative z-10 bg-white">` : `<div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center text-4xl font-black relative z-10 border-4 border-white/20">${worker.name.substring(0,2).toUpperCase()}</div>`}
+                        <div class="text-center md:text-left relative z-10">
+                            <h2 class="text-2xl font-black">${worker.name}</h2>
+                            <p class="text-mint font-semibold">${worker.jobRole}</p>
+                            <span class="inline-block mt-2 text-[10px] px-2 py-1 bg-white/10 rounded-full uppercase font-bold tracking-wider">${worker.status}</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabs Nav -->
+                    <div class="flex gap-2 mb-6 overflow-x-auto hide-scrollbar pb-2 shrink-0">
+                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'rendimiento'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='rendimiento'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="star" class="w-4 h-4"></i> Rendimiento</button>
+                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'laboral'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='laboral'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="user" class="w-4 h-4"></i> Laboral</button>
+                        ${canEdit ? `<button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'banco'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='banco'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="credit-card" class="w-4 h-4"></i> Banco</button>` : ''}
+                        <button onclick="window.setView('profile', {workerId: '${worker.id}', activeTab: 'docs'})" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeTab==='docs'?'bg-dark text-white shadow-md':'text-gray-500 bg-white hover:bg-gray-50 border border-gray-100'}"><i data-lucide="file-text" class="w-4 h-4"></i> Documentos</button>
+                    </div>
+
+                    <!-- Tab Content -->
+                    <div class="flex-1 pb-6">
+                        ${renderTabContent()}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderRanking() {
+            const monthlyPoints = appState.data.points.filter(p => p.month === appState.selectedMonth);
+            const scoresMap = {};
+            appState.data.workers.filter(w=>w.status==='active').forEach(w => scoresMap[w.id] = 0);
+            
+            monthlyPoints.forEach(p => {
+                if(scoresMap[p.workerId] !== undefined) {
+                    scoresMap[p.workerId] += (p.type === 'positive' ? Number(p.points) : -Number(p.points));
+                }
+            });
+
+            const ranking = Object.keys(scoresMap)
+                .map(id => ({ worker: appState.data.workers.find(w => w.id === id), score: scoresMap[id] }))
+                .filter(i => i.worker)
+                .sort((a, b) => b.score - a.score);
+
+            return `
+                <div class="space-y-6 flex flex-col h-full animate-in fade-in duration-300">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 shrink-0">
+                        <div>
+                            <h1 class="text-2xl font-black text-gray-800">Ranking Mensual</h1>
+                            <p class="text-gray-500 text-sm">Evaluaciones del equipo.</p>
+                        </div>
+                        <input type="month" value="${appState.selectedMonth}" onchange="window.changeMonth(event)" class="bg-white border border-gray-200 rounded-xl p-3 font-bold text-dark focus:border-mint focus:outline-none shadow-sm w-full md:w-auto">
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-3 hide-scrollbar pb-6">
+                        ${ranking.length === 0 ? '<p class="text-gray-500 text-center py-10">No hay datos para este mes.</p>' : ranking.map((item, index) => `
+                            <div class="bg-white p-4 rounded-3xl border ${index===0?'border-yellow-400 shadow-md':'border-gray-100'} flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black shrink-0 ${index===0?'bg-yellow-400 text-yellow-900':index===1?'bg-gray-200 text-gray-600':index===2?'bg-amber-600 text-amber-100':'text-gray-400 text-xl'}">${index < 3 ? index+1 : '#'+(index+1)}</div>
+                                ${item.worker.photo ? `<img src="${item.worker.photo}" class="w-12 h-12 rounded-xl object-cover shrink-0">` : `<div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center font-bold text-gray-400 shrink-0">${item.worker.name.substring(0,2).toUpperCase()}</div>`}
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-bold truncate text-sm md:text-base ${index===0?'text-dark':'text-gray-800'}">${item.worker.name}</h3>
+                                    <p class="text-xs text-gray-500 truncate">${item.worker.jobRole}</p>
+                                </div>
+                                <div class="px-3 py-1.5 rounded-xl font-black shrink-0 ${index===0?'bg-yellow-50 text-yellow-700':'bg-green-50 text-green-700'}">${item.score} <span class="text-[10px] uppercase opacity-70">pts</span></div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openWorkerModal = (id = null) => {
+            const isEdit = id != null;
+            const w = isEdit ? appState.data.workers.find(x => x.id === id) : {};
+            appState.formSpecialties = w.specialties || [];
+            
+            const html = `
+                <div class="fixed inset-0 bg-dark/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div class="bg-white rounded-3xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90dvh]">
+                        <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
+                            <h3 class="font-bold text-xl text-dark">${isEdit ? 'Editar' : 'Nuevo'} Trabajador</h3>
+                            <button onclick="window.closeModal()" class="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto flex-1 hide-scrollbar">
+                            <form id="worker-form" onsubmit="window.saveWorker(event)" class="space-y-6">
+                                <input type="hidden" id="w-id" value="${id || ''}">
+                                
+                                <div class="flex flex-col items-center mb-6">
+                                    <div class="relative w-24 h-24 rounded-full bg-gray-50 flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 mb-3">
+                                        <img id="w-photo-preview" src="${w.photo || ''}" class="w-full h-full object-cover ${!w.photo ? 'hidden' : ''}">
+                                        <i id="w-photo-icon" data-lucide="camera" class="w-8 h-8 text-gray-400 ${w.photo ? 'hidden' : ''}"></i>
+                                    </div>
+                                    <label class="text-xs font-bold text-mint bg-dark px-4 py-2 rounded-xl cursor-pointer hover:bg-light transition-colors shadow-sm flex items-center gap-1">
+                                        <i data-lucide="upload" class="w-3 h-3"></i> Subir Foto
+                                        <input type="file" id="w-photo" accept="image/*" class="hidden" onchange="window.handlePhotoUpload(event)">
+                                    </label>
+                                    <input type="hidden" id="w-photo-base64" value="${w.photo || ''}">
+                                    <p class="text-[10px] text-gray-400 mt-2 font-medium">Recomendado: Formato cuadrado, Max 1MB</p>
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-dark border-b border-gray-100 pb-2 mb-4">Información Personal</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Nombre Completo</label><input required id="w-name" value="${w.name||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Documento (ID)</label><input required id="w-idNum" value="${w.idNumber||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono (WhatsApp)</label><input required id="w-phone" value="${w.phone||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Email</label><input type="email" id="w-email" value="${w.email||''}" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Contacto Emergencia (Nombre)</label><input id="w-em-name" value="${w.emergencyContact||''}" class="w-full border border-red-200 rounded-xl p-2.5 bg-red-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono Emergencia</label><input id="w-em-phone" value="${w.emergencyPhone||''}" class="w-full border border-red-200 rounded-xl p-2.5 bg-red-50 focus:bg-white focus:ring-2 focus:ring-mint"></div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-dark border-b border-gray-100 pb-2 mb-4 mt-6">Perfil Laboral y Disponibilidad</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Rol en Plataforma</label>
+                                            <select id="w-sys-role" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50">
+                                                <option value="WORKER" ${w.role==='WORKER'?'selected':''}>Trabajador</option>
+                                                <option value="COORD" ${w.role==='COORD'?'selected':''}>Coordinador</option>
+                                                <option value="HR" ${w.role==='HR'?'selected':''}>Recursos Humanos</option>
+                                                <option value="ADMIN" ${w.role==='ADMIN'?'selected':''}>Administrador</option>
+                                            </select>
+                                        </div>
+                                        <div><label class="block text-xs font-bold text-gray-500 mb-1">Cargo Principal</label><input id="w-job" value="${w.jobRole||''}" placeholder="Ej. Animador Senior" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50"></div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-500 mb-1">Estado</label>
+                                            <select id="w-status" class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50">
+                                                <option value="active" ${w.status==='active'?'selected':''}>Activo</option>
+                                                <option value="inactive" ${w.status==='inactive'?'selected':''}>Inactivo</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-bold text-gray-500 mb-2">Especialidades</label>
+                                            <div class="flex flex-wrap gap-2" id="sp-container">
+                                                ${specialtiesList.map(sp => `
+                                                    <button type="button" onclick="window.toggleSp('${sp}')" id="sp-btn-${sp.replace(/ /g,'')}" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${appState.formSpecialties.includes(sp)?'bg-light text-white':'bg-gray-100 text-gray-500'}">${sp}</button>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                        <div class="col-span-1 md:col-span-2">
+                                            <label class="block text-xs font-bold text-gray-500 mb-1 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> Días y Horarios Disponibles</label>
+                                            <textarea id="w-avail-text" rows="2" placeholder="Ej: Lunes y Miércoles: Todo el día. Sábados: Tarde." class="w-full border border-gray-200 rounded-xl p-2.5 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint text-sm">${w.availabilityText||''}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 class="font-bold text-purple-900 border-b border-purple-100 pb-2 mb-4 mt-6 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Info. Bancaria (Privado)</h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Banco</label><input id="w-b-name" value="${w.bank?.bankName||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-purple-800 mb-1">Tipo Cuenta</label>
+                                            <select id="w-b-type" class="w-full border-purple-200 rounded-xl p-2.5 bg-white">
+                                                <option value="">Seleccione...</option><option value="Ahorros" ${w.bank?.type==='Ahorros'?'selected':''}>Ahorros</option><option value="Corriente" ${w.bank?.type==='Corriente'?'selected':''}>Corriente</option>
+                                            </select>
+                                        </div>
+                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Número</label><input id="w-b-num" value="${w.bank?.number||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
+                                        <div><label class="block text-xs font-bold text-purple-800 mb-1">Titular y Doc.</label><input id="w-b-owner" value="${w.bank?.owner||''}" class="w-full border-purple-200 rounded-xl p-2.5 bg-white"></div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4"><button type="submit" class="w-full bg-mint text-dark font-bold py-3.5 rounded-2xl hover:bg-minthover transition-colors shadow-lg">Guardar Trabajador</button></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-container').innerHTML = html;
+            if(window.lucide) window.lucide.createIcons();
+        };
+
+        window.toggleSp = (sp) => {
+            const idx = appState.formSpecialties.indexOf(sp);
+            if(idx > -1) appState.formSpecialties.splice(idx, 1);
+            else appState.formSpecialties.push(sp);
+            
+            const btn = document.getElementById(`sp-btn-${sp.replace(/ /g,'')}`);
+            if(btn) {
+                btn.className = `px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${idx === -1 ? 'bg-light text-white' : 'bg-gray-100 text-gray-500'}`;
+            }
+        };
+
+        window.handlePhotoUpload = (e) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            if(file.size > 1024 * 1024) return showToast('La foto debe pesar menos de 1MB', 'error');
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                document.getElementById('w-photo-base64').value = ev.target.result;
+                document.getElementById('w-photo-preview').src = ev.target.result;
+                document.getElementById('w-photo-preview').classList.remove('hidden');
+                document.getElementById('w-photo-icon').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
         };
 
         window.saveWorker = (e) => {
             e.preventDefault();
             const id = document.getElementById('w-id').value;
             const data = {
+                id: id || generateId(),
+                photo: document.getElementById('w-photo-base64').value,
                 name: document.getElementById('w-name').value,
-                idNumber: document.getElementById('w-idNumber').value,
+                idNumber: document.getElementById('w-idNum').value,
                 phone: document.getElementById('w-phone').value,
                 email: document.getElementById('w-email').value,
-                city: document.getElementById('w-city').value,
-                address: document.getElementById('w-address').value,
-                emergencyContact: document.getElementById('w-emergContact').value,
-                emergencyPhone: document.getElementById('w-emergPhone').value,
-                role: document.getElementById('w-role').value,
+                emergencyContact: document.getElementById('w-em-name').value,
+                emergencyPhone: document.getElementById('w-em-phone').value,
+                role: document.getElementById('w-sys-role').value,
+                jobRole: document.getElementById('w-job').value,
                 status: document.getElementById('w-status').value,
-                specialties: window.appState.formSpecialties,
-                schedule: {
-                    mon: document.getElementById('w-disp-mon').value,
-                    tue: document.getElementById('w-disp-tue').value,
-                    wed: document.getElementById('w-disp-wed').value,
-                    thu: document.getElementById('w-disp-thu').value,
-                    fri: document.getElementById('w-disp-fri').value,
-                    sat: document.getElementById('w-disp-sat').value,
-                    sun: document.getElementById('w-disp-sun').value
-                }
+                specialties: appState.formSpecialties,
+                availabilityText: document.getElementById('w-avail-text').value,
+                bank: {
+                    bankName: document.getElementById('w-b-name').value,
+                    type: document.getElementById('w-b-type').value,
+                    number: document.getElementById('w-b-num').value,
+                    owner: document.getElementById('w-b-owner').value
+                },
+                joinDate: id ? appState.data.workers.find(w=>w.id===id).joinDate : getTodayStr()
             };
 
-            if(['ADMIN', 'HR'].includes(window.appState.role)) {
-                data.systemRole = document.getElementById('w-systemRole').value;
-                data.bank = {
-                    bankName: document.getElementById('w-bankName').value,
-                    type: document.getElementById('w-bankType').value,
-                    number: document.getElementById('w-bankNum').value,
-                    owner: document.getElementById('w-bankOwner').value,
-                };
-            }
-
-            let workers = window.appState.workers;
-            if(id) {
-                const idx = workers.findIndex(w => w.id === id);
-                if(idx > -1) {
-                    if(!['ADMIN', 'HR'].includes(window.appState.role)) {
-                        data.systemRole = workers[idx].systemRole || 'WORKER';
-                        data.bank = workers[idx].bank || {};
-                    }
-                    workers[idx] = { ...workers[idx], ...data };
-                    window.showToast('Trabajador actualizado');
-                }
+            if (id) {
+                const idx = appState.data.workers.findIndex(w => w.id === id);
+                appState.data.workers[idx] = data;
             } else {
-                if(!data.systemRole) data.systemRole = 'WORKER';
-                data.id = generateId();
-                data.joinDate = getTodayStr();
-                workers.push(data);
-                window.showToast('Trabajador creado');
+                appState.data.workers.push(data);
             }
-            setDb('workers', workers);
-            document.getElementById('worker-modal').classList.remove('active');
+
+            saveData();
+            showToast('Guardado correctamente');
+            window.closeModal();
+            renderApp();
         };
 
-        window.openPointsModal = () => {
-            window.setPointType('positive');
-            document.getElementById('pt-amount').value = 10;
-            document.getElementById('pt-reason').value = '';
-            document.getElementById('points-modal').classList.add('active');
+        window.openPointsModal = (workerId) => {
+            const html = `
+                <div class="fixed inset-0 bg-dark/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+                    <div class="bg-white rounded-3xl w-full max-w-sm shadow-2xl overflow-hidden flex flex-col">
+                        <div class="flex justify-between items-center p-5 border-b border-gray-100">
+                            <h3 class="font-bold text-lg text-dark">Evaluar</h3>
+                            <button onclick="window.closeModal()" class="p-1 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+                        </div>
+                        <form onsubmit="window.savePoints(event, '${workerId}')" class="p-5 space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-2">Tipo</label>
+                                <select id="p-type" class="w-full border border-gray-200 rounded-xl p-3 font-bold text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
+                                    <option value="positive">Positivo (+)</option>
+                                    <option value="negative">Negativo (-)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-2">Puntos</label>
+                                <input type="number" id="p-val" required min="1" value="10" class="w-full border border-gray-200 rounded-xl p-3 font-black text-xl text-center bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-2">Motivo Principal</label>
+                                <input type="text" id="p-reason" required placeholder="Ej. Puntualidad" class="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-2">Observación (Opccional)</label>
+                                <textarea id="p-notes" rows="2" class="w-full border border-gray-200 rounded-xl p-3 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-mint"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-dark text-mint font-bold py-3.5 rounded-2xl hover:bg-light transition-colors shadow-lg mt-2">Guardar</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.getElementById('modal-container').innerHTML = html;
+            if(window.lucide) window.lucide.createIcons();
         };
 
-        window.setPointType = (type) => {
-            window.appState.pointType = type;
-            const pos = document.getElementById('btn-pt-pos');
-            const neg = document.getElementById('btn-pt-neg');
-            if(type === 'positive') {
-                pos.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-green-50 border-green-500 text-green-700 transition-all";
-                neg.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500 transition-all";
-            } else {
-                neg.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-red-50 border-red-500 text-red-700 transition-all";
-                pos.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500 transition-all";
-            }
-        };
-
-        window.savePoints = (e) => {
+        window.savePoints = (e, workerId) => {
             e.preventDefault();
-            const wId = window.appState.selectedWorkerId;
-            if(!wId) return;
-            
-            const points = {
+            appState.data.points.push({
                 id: generateId(),
-                workerId: wId,
-                type: window.appState.pointType,
-                points: Number(document.getElementById('pt-amount').value),
-                reason: document.getElementById('pt-reason').value,
+                workerId: workerId,
+                points: document.getElementById('p-val').value,
+                type: document.getElementById('p-type').value,
+                reason: document.getElementById('p-reason').value,
+                notes: document.getElementById('p-notes').value,
                 date: getTodayStr(),
                 month: getCurrentMonthStr(),
-                evaluatorName: window.appState.userProfile.name
-            };
-
-            const pts = window.appState.pointMovements;
-            pts.push(points);
-            setDb('pointMovements', pts);
-            document.getElementById('points-modal').classList.remove('active');
-            window.showToast('Evaluación guardada');
+                evaluator: appState.currentUser.name
+            });
+            saveData();
+            showToast('Puntuación registrada');
+            window.closeModal();
+            renderApp();
         };
 
-        window.changeDate = (e) => {
-            window.appState.selectedDate = e.target.value;
-            renderCurrentView();
+        window.closeModal = () => {
+            document.getElementById('modal-container').innerHTML = '';
         };
 
-        window.changeMonth = (e) => {
-            window.appState.selectedMonth = e.target.value;
-            renderCurrentView();
-        };
-
-        window.copyToClipboard = (text) => {
-            if (!text) return;
-            const textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";  // Evitar scroll automático
-            textArea.style.opacity = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            try {
-                document.execCommand('copy');
-                window.showToast('Número de cuenta copiado', 'success');
-            } catch (err) {
-                window.showToast('Error al copiar', 'error');
-            }
-            document.body.removeChild(textArea);
-        };
-
-        window.uploadDocument = (workerId) => {
-            const input = document.getElementById('doc-upload');
-            if (!input.files || input.files.length === 0) {
-                return window.showToast('Selecciona un archivo PDF', 'error');
-            }
+        window.handlePdfUpload = (e, workerId) => {
+            const file = e.target.files[0];
+            if(!file) return;
+            if(file.size > 2 * 1024 * 1024) return showToast('El PDF debe pesar menos de 2MB', 'error');
+            if(file.type !== 'application/pdf') return showToast('Solo formato PDF', 'error');
             
-            const file = input.files[0];
-            if (file.type !== 'application/pdf') {
-                return window.showToast('Solo se permiten archivos PDF', 'error');
-            }
-            if (file.size > 2 * 1024 * 1024) { 
-                return window.showToast('El archivo supera los 2MB permitidos', 'error');
-            }
-
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const base64Data = e.target.result;
-                let workers = window.appState.workers;
-                const idx = workers.findIndex(w => w.id === workerId);
-                
-                if (idx > -1) {
-                    if (!workers[idx].documents) workers[idx].documents = [];
-                    workers[idx].documents.push({
-                        name: file.name,
-                        data: base64Data,
-                        date: getTodayStr()
-                    });
-                    
-                    try {
-                        setDb('workers', workers);
-                        window.showToast('Documento subido correctamente');
-                        renderCurrentView(); 
-                    } catch (err) {
-                        window.showToast('Error: Espacio de almacenamiento local lleno', 'error');
-                    }
-                }
+            reader.onload = (ev) => {
+                appState.data.documents.push({
+                    id: generateId(),
+                    workerId: workerId,
+                    name: file.name,
+                    data: ev.target.result,
+                    date: getTodayStr()
+                });
+                saveData();
+                showToast('Documento subido');
+                renderApp();
             };
             reader.readAsDataURL(file);
         };
 
-        window.deleteDocument = (workerId, docIndex) => {
-            // Eliminación directa con notificación (sin usar window.confirm bloqueante)
-            let workers = window.appState.workers;
-            const idx = workers.findIndex(w => w.id === workerId);
-            if (idx > -1 && workers[idx].documents) {
-                workers[idx].documents.splice(docIndex, 1);
-                setDb('workers', workers);
-                window.showToast('Documento eliminado');
-                renderCurrentView();
+        window.deleteDoc = (docId) => {
+            if(confirm('¿Seguro que deseas eliminar este documento?')) {
+                appState.data.documents = appState.data.documents.filter(d => d.id !== docId);
+                saveData();
+                showToast('Documento eliminado');
+                renderApp();
             }
         };
 
-        window.openWhatsApp = (phone, text) => {
-            if(!phone) return window.showToast('El trabajador no tiene teléfono registrado', 'error');
-            window.open(`https://wa.me/57${phone}?text=${encodeURIComponent(text)}`, '_blank');
+        window.changeMonth = (e) => {
+            appState.selectedMonth = e.target.value;
+            renderApp();
         };
 
-        function renderCurrentView() {
-            const container = document.getElementById('main-content');
-            if(!container) return;
-
-            let html = '';
-            switch(window.appState.currentView) {
-                case 'dashboard': html = renderDashboard(); break;
-                case 'workers': html = renderWorkers(); break;
-                case 'profile': html = renderProfile(); break;
-                case 'performance': html = renderPerformance(); break;
-            }
-            container.innerHTML = html;
-            lucide.createIcons();
-        }
-
-        function renderDashboard() {
-            const activeWorkers = window.appState.workers.filter(w => w.status === 'active').length;
+        function renderApp() {
+            const appDiv = document.getElementById('app');
             
-            // Simple score calculation for the month
-            let pts = 0;
-            const currentMonthPts = window.appState.pointMovements.filter(p => p.month === getCurrentMonthStr());
-            currentMonthPts.forEach(p => { pts += (p.type === 'positive' ? p.points : -p.points) });
-            const avgPoints = activeWorkers > 0 ? Math.round(pts / activeWorkers) : 0;
-
-            return `
-                <div class="animate-in fade-in space-y-6">
-                    <div class="bg-[#0d4e46] md:bg-transparent -mx-6 -mt-6 p-8 md:p-0 md:mx-0 md:mt-0 text-white md:text-[#0d4e46] rounded-b-4xl md:rounded-none">
-                        <h1 class="text-3xl font-black mb-1">Hola, ${window.appState.userProfile.name.split(' ')[0]}</h1>
-                        <p class="text-[#7be4af] md:text-gray-500 font-medium">Resumen del mes actual</p>
-                        
-                        <div class="flex justify-start gap-12 mt-8 border-b border-[#146459] md:border-gray-200 pb-6">
-                            <div class="text-center">
-                                <p class="text-4xl md:text-5xl font-black text-[#7be4af] md:text-[#0d4e46] mb-1">${activeWorkers}</p>
-                                <p class="text-[10px] md:text-xs text-gray-300 md:text-gray-500 w-20 leading-tight mx-auto font-medium uppercase tracking-wider">Activos Total</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-4xl md:text-5xl font-black text-[#7be4af] md:text-[#0d4e46] mb-1">${avgPoints}</p>
-                                <p class="text-[10px] md:text-xs text-gray-300 md:text-gray-500 w-20 leading-tight mx-auto font-medium uppercase tracking-wider">Prom. Puntos</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div onclick="window.navigateTo('workers')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm cursor-pointer hover:border-[#7be4af] transition-all flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="users"></i></div>
-                            <div><h3 class="font-bold text-gray-800">Directorio</h3><p class="text-sm text-gray-500">Gestión de personal</p></div>
-                        </div>
-                        <div onclick="window.navigateTo('performance')" class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm cursor-pointer hover:border-[#7be4af] transition-all flex items-center gap-4">
-                            <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center"><i data-lucide="star"></i></div>
-                            <div><h3 class="font-bold text-gray-800">Rendimiento</h3><p class="text-sm text-gray-500">Ranking mensual</p></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderWorkers() {
-            const canEdit = ['ADMIN', 'HR'].includes(window.appState.role);
-            const workersList = window.appState.workers.map(worker => `
-                <div onclick="window.viewWorkerProfile('${worker.id}')" class="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm flex items-start gap-4 cursor-pointer hover:border-[#7be4af] transition-colors">
-                    <div class="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center font-black text-gray-400 text-xl shrink-0">
-                        ${worker.name.substring(0,2).toUpperCase()}
-                    </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex justify-between items-start">
-                            <h3 class="font-bold text-gray-800 truncate">${worker.name}</h3>
-                            <span class="text-[10px] px-2 py-1 rounded-full font-bold ${worker.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-500'}">${worker.status === 'active' ? 'Activo' : 'Inactivo'}</span>
-                        </div>
-                        <p class="text-sm text-[#146459] font-semibold mt-0.5">${worker.role}</p>
-                        <div class="flex gap-1 mt-2 flex-wrap">
-                            ${(worker.specialties || []).slice(0,2).map(s => `<span class="bg-gray-100 text-gray-500 text-[9px] px-2 py-0.5 rounded-md uppercase font-bold">${s}</span>`).join('')}
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-
-            return `
-                <div class="space-y-6 animate-in fade-in h-full flex flex-col">
-                    <div class="flex justify-between items-center">
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-800">Directorio</h1>
-                            <p class="text-gray-500 text-sm">Personal de la empresa.</p>
-                        </div>
-                        ${canEdit ? `<button onclick="window.openWorkerForm()" class="bg-[#7be4af] text-[#0d4e46] px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm hover:bg-[#66d19c] transition-colors"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo</button>` : ''}
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                        ${workersList.length > 0 ? workersList : '<p class="text-gray-500 col-span-full">No hay trabajadores registrados.</p>'}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderProfile() {
-            const worker = window.appState.workers.find(w => w.id === window.appState.selectedWorkerId);
-            if(!worker) return '';
-            
-            const canSeeBank = ['ADMIN', 'HR'].includes(window.appState.role);
-            const canEvaluate = ['ADMIN', 'HR', 'COORD'].includes(window.appState.role);
-            const isWorker = window.appState.role === 'WORKER';
-            const tab = window.appState.activeProfileTab;
-            
-            let pts = 0;
-            const history = window.appState.pointMovements.filter(p => p.workerId === worker.id);
-            history.forEach(p => pts += (p.type === 'positive' ? p.points : -p.points));
-
-            let tabs = [
-                {id: 'personal', label: 'Datos', icon: 'user'},
-                {id: 'laboral', label: 'Laboral', icon: 'briefcase'},
-                ...(canSeeBank ? [{id: 'bank', label: 'Banco', icon: 'credit-card'}] : []),
-                {id: 'docs', label: 'Documentos', icon: 'file-text'},
-                {id: 'points', label: 'Rendimiento', icon: 'star'}
-            ];
-
-            if(isWorker) {
-                tabs = [
-                    {id: 'points', label: 'Rendimiento', icon: 'star'},
-                    {id: 'personal', label: 'Datos', icon: 'user'},
-                    {id: 'laboral', label: 'Laboral', icon: 'briefcase'},
-                    {id: 'docs', label: 'Documentos', icon: 'file-text'}
-                ];
-            }
-
-            let tabContent = '';
-            if(tab === 'personal') {
-                tabContent = `
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                        <div><p class="text-xs text-gray-400 font-bold uppercase">Documento</p><p class="font-medium">${worker.idNumber}</p></div>
-                        <div><p class="text-xs text-gray-400 font-bold uppercase">Teléfono</p><p class="font-medium">${worker.phone}</p></div>
-                        <div><p class="text-xs text-gray-400 font-bold uppercase">Ciudad / Dirección</p><p class="font-medium">${worker.city || 'N/A'} - ${worker.address || 'N/A'}</p></div>
-                        <div class="bg-red-50 p-3 rounded-xl border border-red-100">
-                            <p class="text-xs text-red-400 font-bold uppercase">Emergencia</p>
-                            <p class="font-bold text-red-700">${worker.emergencyContact || 'N/A'}</p>
-                            <p class="text-sm text-red-600">${worker.emergencyPhone || 'N/A'}</p>
-                        </div>
-                    </div>`;
-            } else if(tab === 'laboral') {
-                const schedule = worker.schedule || {};
-                tabContent = `
-                    <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm space-y-4">
-                        <div><p class="text-xs text-gray-400 font-bold uppercase">Cargo</p><p class="font-medium text-[#0d4e46]">${worker.role}</p></div>
-                        <div>
-                            <p class="text-xs text-gray-400 font-bold uppercase mb-2">Especialidades</p>
-                            <div class="flex flex-wrap gap-2">${(worker.specialties||[]).map(s=>`<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-lg text-sm font-semibold">${s}</span>`).join('')}</div>
-                        </div>
-                        <div class="mt-6 border-t border-gray-100 pt-4">
-                            <p class="text-xs text-[#0d4e46] font-bold uppercase mb-3 flex items-center gap-2"><i data-lucide="calendar" class="w-4 h-4"></i> Disponibilidad Semanal</p>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Lunes</p><p class="text-sm font-semibold text-gray-800">${schedule.mon || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Martes</p><p class="text-sm font-semibold text-gray-800">${schedule.tue || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Miércoles</p><p class="text-sm font-semibold text-gray-800">${schedule.wed || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Jueves</p><p class="text-sm font-semibold text-gray-800">${schedule.thu || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Viernes</p><p class="text-sm font-semibold text-gray-800">${schedule.fri || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Sábado</p><p class="text-sm font-semibold text-gray-800">${schedule.sat || 'N/D'}</p></div>
-                                <div class="bg-gray-50 p-3 rounded-xl border border-gray-100"><p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Domingo</p><p class="text-sm font-semibold text-gray-800">${schedule.sun || 'N/D'}</p></div>
-                            </div>
-                        </div>
-                    </div>`;
-            } else if(tab === 'bank' && canSeeBank) {
-                tabContent = `
-                    <div class="bg-purple-50 p-6 rounded-3xl border border-purple-100 shadow-sm space-y-4 animate-in fade-in">
-                        <div><p class="text-xs text-purple-400 font-bold uppercase">Banco</p><p class="font-medium text-purple-900">${worker.bank?.bankName || 'N/A'}</p></div>
-                        <div>
-                            <p class="text-xs text-purple-400 font-bold uppercase mb-1">Cuenta</p>
-                            <div class="flex items-center gap-2">
-                                <p class="font-medium text-purple-900">${worker.bank?.number || 'N/A'} <span class="text-sm text-purple-600 opacity-80">(${worker.bank?.type || ''})</span></p>
-                                ${worker.bank?.number ? `<button type="button" onclick="window.copyToClipboard('${worker.bank.number}')" class="text-purple-600 hover:text-purple-900 hover:bg-purple-200 bg-purple-100 p-1.5 rounded-lg transition-colors ml-2 shadow-sm" title="Copiar número"><i data-lucide="copy" class="w-4 h-4"></i></button>` : ''}
-                            </div>
-                        </div>
-                        <div><p class="text-xs text-purple-400 font-bold uppercase">Titular</p><p class="font-medium text-purple-900">${worker.bank?.owner || 'N/A'}</p></div>
-                    </div>`;
-            } else if(tab === 'docs') {
-                const docs = worker.documents || [];
-                const canEdit = ['ADMIN', 'HR'].includes(window.appState.role);
+            if (appState.currentView === 'login' || !appState.currentUser) {
+                appDiv.innerHTML = renderLogin();
+            } else {
+                let contentHTML = '';
+                if(appState.currentView === 'dashboard') contentHTML = renderDashboard();
+                else if(appState.currentView === 'workers') contentHTML = renderWorkers();
+                else if(appState.currentView === 'profile') contentHTML = renderProfile(appState.viewParams.workerId);
+                else if(appState.currentView === 'ranking') contentHTML = renderRanking();
                 
-                tabContent = `
-                    <div class="animate-in fade-in space-y-4">
-                        <div class="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm">
-                            <h3 class="font-bold text-gray-800 mb-6 flex items-center gap-2"><i data-lucide="file-text" class="w-5 h-5 text-gray-400"></i> Repositorio de Documentos</h3>
-                            
-                            ${canEdit ? `
-                            <div class="mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-200">
-                                <label class="block text-sm font-bold text-gray-700 mb-2">Subir nuevo documento (PDF)</label>
-                                <div class="flex flex-col md:flex-row gap-3 items-start md:items-center">
-                                    <input type="file" id="doc-upload" accept="application/pdf" class="flex-1 w-full text-sm text-gray-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#7be4af] file:text-[#0d4e46] hover:file:bg-[#66d19c] cursor-pointer transition-colors">
-                                    <button onclick="window.uploadDocument('${worker.id}')" class="bg-[#0d4e46] text-white px-5 py-2.5 rounded-xl font-bold hover:bg-[#146459] transition-colors flex items-center gap-2 shadow-md w-full md:w-auto justify-center"><i data-lucide="upload" class="w-4 h-4"></i> Subir PDF</button>
-                                </div>
-                                <p class="text-[10px] text-gray-400 font-medium mt-2">* Tamaño máximo recomendado por archivo: 2MB</p>
-                            </div>
-                            ` : ''}
-
-                            <div class="space-y-3">
-                                ${docs.length === 0 ? '<div class="text-center py-6 bg-gray-50 rounded-2xl border border-dashed border-gray-200"><p class="text-gray-400 text-sm font-medium">No hay documentos registrados para este trabajador.</p></div>' : ''}
-                                ${docs.map((doc, idx) => `
-                                    <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-2xl hover:border-gray-300 hover:shadow-sm transition-all">
-                                        <div class="flex items-center gap-4">
-                                            <div class="w-12 h-12 bg-red-50 text-red-500 rounded-xl flex items-center justify-center shrink-0"><i data-lucide="file-text" class="w-6 h-6"></i></div>
-                                            <div class="min-w-0">
-                                                <p class="font-bold text-sm text-gray-800 truncate" title="${doc.name}">${doc.name}</p>
-                                                <p class="text-[10px] text-gray-400 font-bold uppercase mt-0.5">Subido: ${doc.date}</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex gap-2 shrink-0 ml-4">
-                                            <a href="${doc.data}" download="${doc.name}" class="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-colors" title="Descargar PDF"><i data-lucide="download" class="w-4 h-4"></i></a>
-                                            ${canEdit ? `<button onclick="window.deleteDocument('${worker.id}', ${idx})" class="p-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors" title="Eliminar documento"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
-                                        </div>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    </div>`;
-            } else if(tab === 'points') {
-                tabContent = `
-                    <div class="space-y-4">
-                        <div class="bg-gradient-to-r from-[#0d4e46] to-[#146459] p-6 rounded-3xl text-white shadow-lg flex justify-between items-center">
-                            <div><p class="text-[#7be4af] text-sm font-bold uppercase">Puntos Históricos</p><h3 class="text-4xl font-black">${pts} pts</h3></div>
-                            ${canEvaluate ? `<button onclick="window.openPointsModal()" class="w-12 h-12 bg-[#7be4af] text-[#0d4e46] rounded-2xl flex items-center justify-center hover:bg-white transition-colors"><i data-lucide="plus"></i></button>` : ''}
-                        </div>
-                        <div class="space-y-3">
-                            ${history.reverse().map(p => `
-                                <div class="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center">
-                                    <div class="flex gap-3 items-center">
-                                        <div class="w-10 h-10 rounded-xl flex items-center justify-center font-black ${p.type==='positive'?'bg-green-100 text-green-600':'bg-red-100 text-red-600'}">${p.type==='positive'?'+':'-'}${p.points}</div>
-                                        <div><p class="font-bold text-gray-800">${p.reason}</p><p class="text-[10px] text-gray-400 font-bold uppercase">${p.date} • Por: ${p.evaluatorName}</p></div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                            ${history.length===0 ? '<p class="text-gray-400 text-center text-sm py-4">No hay historial.</p>' : ''}
-                        </div>
-                    </div>`;
+                appDiv.innerHTML = renderLayout(contentHTML);
             }
-
-            return `
-                <div class="animate-in fade-in space-y-6">
-                    <div class="flex justify-between items-center">
-                        ${!isWorker 
-                            ? `<button onclick="window.navigateTo('workers')" class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 font-bold flex items-center gap-2 hover:bg-gray-50"><i data-lucide="chevron-left" class="w-4 h-4"></i> Volver</button>`
-                            : `<h2 class="text-xl font-black text-[#0d4e46]">Mi Perfil</h2>`
-                        }
-                        <div class="flex gap-2">
-                            ${canSeeBank ? `<button onclick="window.openWorkerForm('${worker.id}')" class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-gray-600 font-bold"><i data-lucide="edit-3" class="w-4 h-4"></i></button>` : ''}
-                            ${!isWorker ? `<button onclick="window.openWhatsApp('${worker.phone}', 'Hola ${worker.name.split(' ')[0]}, ')" class="px-4 py-2 bg-[#25D366] text-white rounded-xl font-bold flex items-center gap-2 hover:bg-[#1EBE5D]"><i data-lucide="message-circle" class="w-4 h-4"></i> Contactar</button>` : ''}
-                        </div>
-                    </div>
-
-                    <div class="bg-[#0d4e46] text-white p-8 rounded-3xl flex items-center gap-6 relative overflow-hidden">
-                        <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center text-4xl font-black shrink-0 relative z-10">${worker.name.substring(0,2).toUpperCase()}</div>
-                        <div class="relative z-10">
-                            <h2 class="text-3xl font-black">${worker.name}</h2>
-                            <p class="text-[#7be4af] font-semibold">${worker.role}</p>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2 overflow-x-auto hide-scrollbar border-b border-gray-200 pb-2">
-                        ${tabs.map(t => `
-                            <button onclick="window.changeProfileTab('${t.id}')" class="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm whitespace-nowrap transition-colors ${tab === t.id ? 'bg-[#0d4e46] text-white' : 'text-gray-500 hover:bg-gray-100'}">
-                                <i data-lucide="${t.icon}" class="w-4 h-4"></i> ${t.label}
-                            </button>
-                        `).join('')}
-                    </div>
-
-                    <div>${tabContent}</div>
-                </div>
-            `;
-        }
-
-        function renderAvailability() {
-            const date = window.appState.selectedDate;
-            const records = window.appState.availability.filter(a => a.date === date);
-            const activeWorkers = window.appState.workers.filter(w=>w.status==='active');
             
-            const workersStatus = activeWorkers.map(w => {
-                const rec = records.find(r => r.workerId === w.id);
-                return { worker: w, status: rec ? rec.status : 'pending', notes: rec ? rec.notes : '' };
-            });
-
-            const avail = workersStatus.filter(w=>w.status==='available');
-            const unavail = workersStatus.filter(w=>w.status==='unavailable');
-            const pend = workersStatus.filter(w=>w.status==='pending');
-            const canEdit = ['ADMIN', 'HR', 'COORD'].includes(window.appState.role);
-
-            const renderWorkerRow = (ws, type) => {
-                let btns = '';
-                if(canEdit) {
-                    if(type==='pending') {
-                        btns = `
-                            <button onclick="window.setStatus('${ws.worker.id}', 'available')" class="w-8 h-8 rounded-full bg-green-50 text-green-600 flex items-center justify-center font-bold hover:bg-green-100"><i data-lucide="check" class="w-4 h-4"></i></button>
-                            <button onclick="window.setStatus('${ws.worker.id}', 'unavailable')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold hover:bg-red-100"><i data-lucide="x" class="w-4 h-4"></i></button>
-                        `;
-                    } else if(type==='available') {
-                        btns = `<button onclick="window.setStatus('${ws.worker.id}', 'unavailable')" class="text-xs text-red-500 font-bold hover:underline">Marcar No Disp.</button>`;
-                    } else {
-                        btns = `<button onclick="window.setStatus('${ws.worker.id}', 'available')" class="text-xs text-green-600 font-bold hover:underline">Marcar Disp.</button>`;
-                    }
-                }
-                
-                return `
-                    <div class="bg-white p-3 rounded-2xl border ${type==='unavailable'?'border-red-100 bg-red-50/30':'border-gray-100'} flex justify-between items-center mb-2">
-                        <div>
-                            <p class="font-bold text-sm text-gray-800 ${type==='unavailable'?'line-through opacity-70':''}">${ws.worker.name}</p>
-                            ${ws.notes ? `<p class="text-xs text-gray-500">${ws.notes}</p>` : ''}
-                        </div>
-                        <div class="flex gap-2 items-center">${btns}</div>
-                    </div>
-                `;
-            };
-
-            return `
-                <div class="animate-in fade-in space-y-6">
-                    <div class="bg-[#0d4e46] text-white p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <label class="block text-[#7be4af] font-bold text-xs uppercase mb-2">Fecha a consultar</label>
-                            <input type="date" value="${date}" onchange="window.changeDate(event)" class="bg-white/10 border border-white/20 rounded-xl p-3 text-white focus:outline-none [&::-webkit-calendar-picker-indicator]:invert">
-                        </div>
-                        <div class="flex gap-6">
-                            <div class="text-center"><p class="text-2xl font-black text-[#7be4af]">${avail.length}</p><p class="text-[10px] uppercase font-bold opacity-80">Disp.</p></div>
-                            <div class="text-center"><p class="text-2xl font-black text-red-400">${unavail.length}</p><p class="text-[10px] uppercase font-bold opacity-80">No Disp.</p></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <div><h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span> Disponibles</h3>${avail.map(w=>renderWorkerRow(w,'available')).join('')}</div>
-                        <div><h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-gray-400"></span> Sin Confirmar</h3>${pend.map(w=>renderWorkerRow(w,'pending')).join('')}</div>
-                        <div><h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span> No Disponibles</h3>${unavail.map(w=>renderWorkerRow(w,'unavailable')).join('')}</div>
-                    </div>
-                </div>
-            `;
+            if(window.lucide) window.lucide.createIcons();
         }
 
-        function renderPerformance() {
-            const month = window.appState.selectedMonth;
-            const ptsData = window.appState.pointMovements.filter(p => p.month === month);
-            
-            const scores = {};
-            window.appState.workers.filter(w=>w.status==='active').forEach(w => scores[w.id] = 0);
-            ptsData.forEach(p => {
-                if(scores[p.workerId] !== undefined) scores[p.workerId] += (p.type === 'positive' ? p.points : -p.points);
-            });
-
-            const ranking = Object.keys(scores)
-                .map(id => ({ worker: window.appState.workers.find(w=>w.id===id), score: scores[id] }))
-                .filter(item => item.worker)
-                .sort((a,b) => b.score - a.score);
-
-            return `
-                <div class="animate-in fade-in space-y-6">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                            <h1 class="text-2xl font-black text-gray-800">Ranking Mensual</h1>
-                            <p class="text-gray-500 text-sm">Rendimiento basado en evaluaciones.</p>
-                        </div>
-                        <input type="month" value="${month}" onchange="window.changeMonth(event)" class="bg-white border border-gray-300 rounded-xl p-3 font-bold text-[#0d4e46]">
-                    </div>
-
-                    <div class="space-y-3">
-                        ${ranking.length===0 ? '<p class="text-gray-500 text-center py-10">No hay datos.</p>' : ''}
-                        ${ranking.map((item, idx) => `
-                            <div class="bg-white p-4 rounded-3xl border ${idx===0?'border-yellow-400 shadow-lg scale-[1.02]':'border-gray-100'} flex items-center gap-4">
-                                <div class="w-10 h-10 rounded-full flex items-center justify-center font-black ${idx===0?'bg-yellow-400 text-yellow-900 border-2 border-yellow-200':idx===1?'bg-gray-200 text-gray-600':idx===2?'bg-amber-600 text-amber-100':'text-gray-400'}">${idx+1}</div>
-                                <div class="flex-1">
-                                    <h3 class="font-bold ${idx===0?'text-lg text-[#0d4e46]':'text-gray-800'}">${item.worker.name}</h3>
-                                    <p class="text-xs text-gray-500">${item.worker.role}</p>
-                                </div>
-                                <div class="px-4 py-2 rounded-xl font-black ${idx===0?'bg-yellow-50 text-yellow-700':'bg-green-50 text-green-700'}">${item.score} <span class="text-[10px] uppercase opacity-70">pts</span></div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
+        window.onload = () => {
+            loadData();
+            loadSession();
+            renderApp();
+        };
     </script>
 </body>
 </html>
