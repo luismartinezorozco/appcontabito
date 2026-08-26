@@ -2,343 +2,1258 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Contabito</title>
-
-    <!-- PWA & Apple iOS Metadata -->
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <!-- Usamos black-translucent para poder manipular el notch con CSS -->
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Contabito">
-    <meta name="theme-color" content="#0A0A0B">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Web App V2 - Gestión de Talento (Local)</title>
     
-    <!-- Icons -->
-    <link rel="icon" type="image/png" href="https://res.cloudinary.com/dkufuo5wc/image/upload/v1778780323/ChatGPT_Image_14_may_2026_12_37_19_p.m._wye8gt.png">
-    <link rel="apple-touch-icon" href="https://res.cloudinary.com/dkufuo5wc/image/upload/v1778780323/ChatGPT_Image_14_may_2026_12_37_19_p.m._wye8gt.png">
-
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'hr-dark': '#0d4e46',    
+                        'hr-light': '#146459',   
+                        'hr-mint': '#7be4af',    
+                        'hr-mint-hover': '#66d19c',
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        body {
-            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #0A0A0B; /* Fondo oscuro principal */
-            margin: 0;
-            overflow: hidden; 
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            overscroll-behavior-y: none;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0d4e46; overflow: hidden; margin: 0; padding: 0; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Animations */
+        .fade-in { animation: fadeIn 0.3s ease-in-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Modal Backdrop */
+        .modal-backdrop {
+            position: fixed; inset: 0; background-color: rgba(13, 78, 70, 0.8);
+            backdrop-filter: blur(4px); z-index: 100; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
         }
-
-        /* --- Colores y Fondos (Dark Theme EQB) --- */
-        .bg-dark-top {
-            background: linear-gradient(135deg, #1A1A1A 0%, #050505 100%);
-            /* Respetar el safe area del notch para el logo principal */
-            padding-top: calc(env(safe-area-inset-top) + 2rem);
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: white; width: 100%; max-width: 32rem; border-radius: 1.5rem; max-height: 90vh;
+            display: flex; flex-direction: column; transform: scale(0.95); transition: transform 0.2s ease;
         }
-
-        .bg-light-bottom {
-            background-color: #0A0A0B;
-        }
-
-        /* --- Neumorphism Dark (Top Section) --- */
-        .neo-dark {
-            background: #0A0A0B;
-            box-shadow: 8px 8px 16px #040404, -8px -8px 16px #101012;
-            border-radius: 2rem;
-        }
-
-        /* --- Neumorphism Dark (Buttons) --- */
-        .neo-btn {
-            background: #111112;
-            border-radius: 28px;
-            /* Sombra oscura mate */
-            box-shadow: 7px 7px 14px #050505, -7px -7px 14px #1d1d1f;
-            transition: all 0.2s cubic-bezier(0.5, 1, 0.89, 1);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 10px;
-            border: 1px solid rgba(255, 85, 0, 0.08); /* Borde sutil naranja EQB */
-            touch-action: manipulation; /* Remueve delay de 300ms en iOS */
-        }
-
-        .neo-btn:active {
-            box-shadow: inset 5px 5px 10px #050505, inset -5px -5px 10px #1d1d1f;
-            transform: scale(0.95);
-        }
-
-        .neo-icon-wrapper {
-            width: 54px;
-            height: 54px;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            background: #0A0A0B;
-            box-shadow: inset 4px 4px 8px #040404, inset -4px -4px 8px #101012;
-        }
-
-        /* --- Transiciones y Iframe --- */
-        #iframe-container {
-            /* 
-             * SOLUCIÓN DEL NOTCH / SAFE AREA:
-             * Empuja todo el contenido hacia abajo respetando la cámara del iPhone.
-             */
-            padding-top: env(safe-area-inset-top);
-            background-color: #000000; /* Negro puro para la barra de estado al abrir app */
-            
-            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-            opacity: 0;
-            pointer-events: none;
-            /* GPU Acceleration */
-            transform: scale(0.95) translateZ(0);
-            will-change: transform, opacity;
-            
-            /* Usamos flex para que el iframe ocupe el resto del espacio */
-            display: flex;
-            flex-direction: column;
-        }
-
-        #iframe-container.active {
-            opacity: 1;
-            pointer-events: auto;
-            transform: scale(1) translateZ(0);
-        }
-
-        #app-frame {
-            flex-grow: 1; /* Ocupa todo el espacio debajo del Safe Area */
-            width: 100%;
-            border: none;
-            background-color: #ffffff;
-            border-top-left-radius: 12px; /* Redondeo leve para integrarse al ecosistema */
-            border-top-right-radius: 12px;
-        }
-
-        #hub-view {
-            transition: opacity 0.4s ease, transform 0.4s ease;
-            will-change: transform, opacity;
-            transform: translateZ(0);
-        }
-
-        /* --- Zona de Detección de Gestos (Edge Swipe) --- */
-        #swipe-edge {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 12px; /* Reducido de 20px a 12px para no bloquear menús táctiles de las apps */
-            height: 100%;
-            z-index: 60;
-            pointer-events: none;
-        }
-
-        #swipe-edge.active {
-            pointer-events: auto;
-        }
+        .modal-backdrop.active .modal-content { transform: scale(1); }
     </style>
 </head>
+<body>
 
-<body class="relative w-full h-screen flex flex-col bg-light-bottom">
-
-    <!-- SOLUCIÓN: Definición de Gradientes SVG (position absolute w-0 h-0 para que Chrome/Safari no los rompa) -->
-    <svg class="absolute w-0 h-0 pointer-events-none" aria-hidden="true" style="position: absolute; width: 0; height: 0;">
-        <defs>
-            <!-- Degradado Naranja Vibrante estilo EQB STUDIO -->
-            <linearGradient id="grad-eqb" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#FF7A00" />
-                <stop offset="100%" stop-color="#FF3D00" />
-            </linearGradient>
-        </defs>
-    </svg>
-
-    <!-- HUB VIEW PRINCIPAL (Ahora fluye todo junto en un solo scroll) -->
-    <main id="hub-view" class="w-full h-full overflow-y-auto relative z-10 flex flex-col" style="-webkit-overflow-scrolling: touch;">
-        
-        <!-- SECCIÓN SUPERIOR OSCURA -->
-        <section class="bg-dark-top w-full pt-10 pb-24 relative flex flex-col items-center justify-center min-h-[45vh] shrink-0">
-            <div class="relative z-10 flex flex-col items-center">
-                
-                <!-- Logo Neumórfico Oscuro -->
-                <div class="neo-dark w-28 h-28 p-2 flex items-center justify-center mb-5">
-                    <img src="https://res.cloudinary.com/dkufuo5wc/image/upload/v1778780323/ChatGPT_Image_14_may_2026_12_37_19_p.m._wye8gt.png" 
-                         alt="Contabito Logo" 
-                         class="w-full h-full object-cover rounded-[1.5rem]">
-                </div>
-
-                <h1 class="text-3xl font-extrabold tracking-tight text-white mb-1">Contabito</h1>
-                <p class="text-sm font-semibold text-orange-500">Ecosistema Empresarial</p>
-            </div>
-
-            <!-- ONDA SEPARADORA (Ajustada para que NUNCA corte los botones) -->
-            <div class="absolute bottom-[-2px] left-0 w-full leading-none z-0 pointer-events-none">
-                <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-16 sm:h-24" style="transform: rotateY(180deg);">
-                    <path d="M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.78,31,906.67,72,985.66,92.83c70.05,18.48,146.53,26.09,214.34,3V120H0V95.8C59.71,118.08,130.83,119.5,193.36,99.21,239.52,84.18,280.9,71.21,321.39,56.44Z" fill="#0A0A0B"></path>
-                </svg>
-            </div>
-        </section>
-
-        <!-- SECCIÓN INFERIOR CLARA (Cuadrícula de Apps) -->
-        <section class="bg-light-bottom w-full px-6 pt-4 pb-20 flex-1">
-            <div class="max-w-xs mx-auto grid grid-cols-2 gap-x-8 gap-y-8">
-                
-                <!-- App 1: Calendario -->
-                <!-- URL actualizada con "/" al final para evitar redirecciones de seguridad de Vercel -->
-                <button onclick="openApp('https://calendario-wine-three.vercel.app/')" class="neo-btn">
-                    <div class="neo-icon-wrapper">
-                        <!-- Icono Calendario -->
-                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
-                            <path fill-rule="evenodd" d="M6.75 2.25A.75.75 0 017.5 3v1.5h9V3A.75.75 0 0118 3v1.5h.75a3 3 0 013 3v11.25a3 3 0 01-3 3H5.25a3 3 0 01-3-3V7.5a3 3 0 013-3H6V3a.75.75 0 01.75-.75zm13.5 9a1.5 1.5 0 00-1.5-1.5H5.25a1.5 1.5 0 00-1.5 1.5v7.5a1.5 1.5 0 001.5 1.5h13.5a1.5 1.5 0 001.5-1.5v-7.5z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <span class="text-[13px] font-bold text-gray-200">Calendario</span>
-                </button>
-
-                <!-- App 2: Facturación -->
-                <button onclick="openApp('https://nodianvip.vercel.app')" class="neo-btn">
-                    <div class="neo-icon-wrapper">
-                        <!-- Icono Factura -->
-                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
-                            <path fill-rule="evenodd" d="M2.25 4.125c0-1.036.84-1.875 1.875-1.875h5.25c1.036 0 1.875.84 1.875 1.875V17.25a4.5 4.5 0 11-9 0V4.125zm4.5 3.375a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm0 3a.75.75 0 01.75-.75h.75a.75.75 0 010 1.5h-.75a.75.75 0 01-.75-.75zm6.75-6.75a.75.75 0 01.75-.75h5.25a.75.75 0 010 1.5h-5.25a.75.75 0 01-.75-.75zm.75 2.25a.75.75 0 000 1.5h5.25a.75.75 0 000-1.5h-5.25z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <span class="text-[13px] font-bold text-gray-200">Facturación</span>
-                </button>
-
-                <!-- App 3: RR-HH -->
-                <button onclick="openApp('https://rr-hh-eqbbito.vercel.app/')" class="neo-btn">
-                    <div class="neo-icon-wrapper">
-                        <!-- Icono Usuarios -->
-                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.4)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
-                            <path d="M4.5 6.375a4.125 4.125 0 118.25 0 4.125 4.125 0 01-8.25 0zM14.25 8.625a3.375 3.375 0 116.75 0 3.375 3.375 0 01-6.75 0zM1.5 19.125a7.125 7.125 0 0114.25 0v.003l-.001.119a.75.75 0 01-.363.63 13.067 13.067 0 01-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 01-.364-.63l-.001-.122zM17.25 19.128l-.001.144a2.25 2.25 0 01-.233.96 10.088 10.088 0 005.06-1.01.75.75 0 00.42-.643 4.875 4.875 0 00-6.957-4.611 8.586 8.586 0 011.71 5.157v.003z" />
-                        </svg>
-                    </div>
-                    <span class="text-[13px] font-bold text-gray-200">RR-HH</span>
-                </button>
-
-                <!-- App 4: Bodega digital -->
-                <button onclick="openApp('https://eqbito.vercel.app')" class="neo-btn">
-                    <div class="neo-icon-wrapper">
-                        <!-- Icono Cubo -->
-                        <svg class="w-8 h-8 drop-shadow-[0_2px_10px_rgba(255,85,0,0.6)]" viewBox="0 0 24 24" fill="url(#grad-eqb)">
-                            <path d="M12.378 1.602a.75.75 0 00-.756 0L3 6.632l9 5.25 9-5.25-8.622-5.03zM21.75 7.93l-9 5.25v9l8.628-5.032a.75.75 0 00.372-.648V7.93zM11.25 22.18v-9l-9-5.25v8.57a.75.75 0 00.372.648l8.628 5.033z" />
-                        </svg>
-                    </div>
-                    <span class="text-[13px] font-bold text-gray-200 text-center leading-tight">Bodega digital</span>
-                </button>
-
-            </div>
-        </section>
-    </main>
-
-    <!-- CONTENEDOR DE LA WEB (Con Safe Area implementado) -->
-    <div id="iframe-container" class="fixed inset-0 z-20 w-full h-full">
-        
-        <!-- Pantalla de Carga Oscura -->
-        <div id="loading-indicator" class="absolute inset-0 flex items-center justify-center bg-[#0A0A0B] z-30 transition-opacity duration-500">
-            <div class="neo-btn !rounded-2xl p-6 flex flex-col items-center gap-4 border border-orange-500/20">
-                <svg class="animate-spin h-10 w-10 text-orange-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="text-gray-300 text-sm font-bold tracking-wide">Conectando...</span>
-            </div>
+    <div id="login-screen" class="min-h-screen bg-[#0d4e46] flex flex-col items-center justify-center p-6 fade-in">
+        <div class="w-20 h-20 bg-[#7be4af] rounded-3xl flex items-center justify-center text-[#0d4e46] mb-8 shadow-[0_0_40px_rgba(123,228,175,0.3)]">
+           <i data-lucide="briefcase" style="width: 40px; height: 40px;"></i>
         </div>
+        <h1 class="text-4xl font-black text-white mb-2 tracking-tight text-center">HR Events</h1>
+        <p class="text-[#7be4af] font-medium mb-10 text-center max-w-sm">Sistema centralizado de gestión de talento, disponibilidad y rendimiento.</p>
         
-        <!-- El Iframe se renderiza debajo del Notch del iPhone. Añadidos permisos de portapapeles y fullscreen -->
-        <iframe id="app-frame" src="about:blank" allow="clipboard-read; clipboard-write; camera; geolocation" allowfullscreen></iframe>
+        <div class="bg-white rounded-3xl p-8 w-full max-w-sm text-center shadow-lg">
+          <h2 class="text-xl font-bold text-gray-800 mb-6" id="login-text">Iniciando Sesión Local...</h2>
+          <div class="flex justify-center mb-4">
+             <div class="w-10 h-10 border-4 border-gray-200 border-t-[#7be4af] rounded-full animate-spin"></div>
+          </div>
+          <p class="text-sm text-gray-500">Cargando base de datos interna...</p>
+        </div>
     </div>
 
-    <!-- ZONA DE DETECCIÓN DE GESTO (Edge Swipe Left) -->
-    <div id="swipe-edge" aria-hidden="true"></div>
+    <div id="app-layout" class="hidden flex h-[100dvh] w-full bg-[#0d4e46] overflow-hidden">
+        
+        <!-- SIDEBAR (Desktop) -->
+        <div class="hidden md:flex flex-col w-72 bg-[#0d4e46] text-white pt-8 pb-6 px-6 border-r border-[#146459] relative z-20">
+            <div class="mb-10 flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#7be4af] rounded-xl flex items-center justify-center text-[#0d4e46]">
+                    <i data-lucide="briefcase"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black tracking-tight leading-tight">HR Events</h2>
+                    <p class="text-[10px] text-[#7be4af] uppercase font-bold tracking-widest">Portal V2 (Local)</p>
+                </div>
+            </div>
+
+            <nav class="flex-1 space-y-2" id="desktop-nav">
+                <!-- Nav items generated by JS -->
+            </nav>
+
+            <div class="mt-auto bg-[#146459] p-4 rounded-3xl border border-[#146459]/50">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#0d4e46] font-bold" id="user-avatar">U</div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-bold truncate" id="user-name">Usuario</p>
+                      <p class="text-[10px] text-[#7be4af] font-black uppercase tracking-wider" id="user-role-label">ADMIN</p>
+                    </div>
+                </div>
+                <button onclick="window.appSignOut()" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-gray-300 hover:text-white bg-[#0d4e46] py-2 rounded-xl transition-colors">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="flex-1 flex flex-col h-full bg-[#f8fafc] md:rounded-l-[2.5rem] overflow-hidden relative shadow-2xl md:border-l-8 border-[#7be4af]/20">
+            <!-- Topbar (Desktop) -->
+            <div class="hidden md:flex h-20 items-center justify-between px-8 bg-white border-b border-gray-100 shrink-0">
+                <div class="flex items-center gap-2 text-gray-500 bg-gray-50 px-4 py-2 rounded-full border border-gray-100">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                    <span class="text-sm font-medium">Búsqueda global...</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button class="w-10 h-10 bg-gray-50 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-100 relative">
+                        <i data-lucide="bell" class="w-5 h-5"></i>
+                        <span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Views Container -->
+            <div class="flex-1 overflow-hidden p-6 md:p-8 relative" id="views-container">
+                <!-- Views injected here by JS -->
+            </div>
+
+            <!-- BOTTOM NAV (Mobile) -->
+            <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-6 py-4 rounded-t-4xl shadow-[0_-10px_40px_rgba(0,0,0,0.08)] z-50">
+                <div class="flex justify-between items-center max-w-sm mx-auto" id="mobile-nav">
+                    <!-- Mobile nav items generated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Worker Form Modal -->
+    <div id="modal-worker" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
+                <h3 class="font-bold text-xl text-[#0d4e46]" id="worker-modal-title">Nuevo Trabajador</h3>
+                <button onclick="window.closeModal('modal-worker')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form id="worker-form" class="space-y-6" onsubmit="window.saveWorker(event)">
+                    <input type="hidden" id="w-id">
+                    
+                    <div>
+                        <h4 class="font-bold text-[#0d4e46] border-b pb-2 mb-4">Información Personal</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Nombre Completo</label><input required id="w-name" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Cédula</label><input required id="w-idNumber" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono (WhatsApp)</label><input required id="w-phone" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Correo Electrónico</label><input type="email" id="w-email" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Ciudad</label><input id="w-city" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Dirección</label><input id="w-address" class="w-full border rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Contacto Emergencia</label><input id="w-emergContact" class="w-full border rounded-xl p-2.5 bg-red-50" /></div>
+                            <div><label class="block text-xs font-bold text-gray-500 mb-1">Teléfono Emergencia</label><input id="w-emergPhone" class="w-full border rounded-xl p-2.5 bg-red-50" /></div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-[#0d4e46] border-b pb-2 mb-4 mt-6">Información Laboral</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Cargo Principal</label>
+                                <select id="w-role" class="w-full border rounded-xl p-2.5">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Animador">Animador</option>
+                                    <option value="Coordinador">Coordinador</option>
+                                    <option value="Logística">Logística</option>
+                                    <option value="DJ">DJ</option>
+                                    <option value="Fotografía">Fotografía</option>
+                                    <option value="Video">Video</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 mb-1">Estado</label>
+                                <select id="w-status" class="w-full border rounded-xl p-2.5">
+                                    <option value="active">Activo</option>
+                                    <option value="inactive">Inactivo</option>
+                                </select>
+                            </div>
+                            <div class="col-span-1 md:col-span-2">
+                                <label class="block text-xs font-bold text-gray-500 mb-2">Especialidades (Click para seleccionar)</label>
+                                <div id="w-specialties-container" class="flex flex-wrap gap-2"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="bank-section-form">
+                        <h4 class="font-bold text-purple-900 border-b border-purple-100 pb-2 mb-4 mt-6 flex items-center gap-2"><i data-lucide="shield-alert" class="w-4 h-4"></i> Información Bancaria (Privado)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Banco</label><input id="w-bankName" class="w-full border-purple-200 rounded-xl p-2.5" /></div>
+                            <div>
+                                <label class="block text-xs font-bold text-purple-800 mb-1">Tipo de Cuenta</label>
+                                <select id="w-bankType" class="w-full border-purple-200 rounded-xl p-2.5">
+                                    <option value="">Seleccione...</option><option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Número de Cuenta</label><input id="w-bankNum" class="w-full border-purple-200 rounded-xl p-2.5" /></div>
+                            <div><label class="block text-xs font-bold text-purple-800 mb-1">Titular de la cuenta</label><input id="w-bankOwner" class="w-full border-purple-200 rounded-xl p-2.5" /></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-2xl font-bold hover:bg-[#66d19c] transition-colors shadow-lg">Guardar Trabajador</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Points Modal -->
+    <div id="modal-points" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
+                <h3 class="font-bold text-xl text-[#0d4e46]">Evaluar Rendimiento</h3>
+                <button onclick="window.closeModal('modal-points')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form onsubmit="window.savePoints(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Tipo de Evaluación</label>
+                        <div class="flex gap-2">
+                            <button type="button" id="btn-pt-pos" onclick="window.setPointType('positive')" class="flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-green-50 border-green-500 text-green-700"><i data-lucide="trending-up" class="w-4 h-4"></i> Positivo</button>
+                            <button type="button" id="btn-pt-neg" onclick="window.setPointType('negative')" class="flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500"><i data-lucide="trending-down" class="w-4 h-4"></i> Negativo</button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Cantidad de Puntos</label>
+                        <input type="number" id="pt-amount" required min="1" value="10" class="w-full border border-gray-300 rounded-xl p-3 font-bold text-xl" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Motivo Principal</label>
+                        <input type="text" id="pt-reason" required placeholder="Ej. Excelente actitud, Llegada tarde..." class="w-full border border-gray-300 rounded-xl p-3 bg-white" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">Observación (Opcional)</label>
+                        <textarea id="pt-notes" class="w-full border border-gray-300 rounded-xl p-3" rows="3" placeholder="Detalles de la evaluación..."></textarea>
+                    </div>
+                    <div class="flex justify-end pt-4">
+                        <button type="submit" class="w-full bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-2xl font-bold hover:bg-[#66d19c] transition-colors shadow-lg">Guardar Evaluación</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Reward Modal -->
+    <div id="modal-reward" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100 shrink-0">
+                <h3 class="font-bold text-xl text-[#0d4e46]">Otorgar Reconocimiento</h3>
+                <button onclick="window.closeModal('modal-reward')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1">
+                <form onsubmit="window.saveReward(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Trabajador</label>
+                        <select id="rw-worker" required class="w-full border rounded-xl p-3"></select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Tipo de Reconocimiento</label>
+                        <select id="rw-type" required class="w-full border rounded-xl p-3">
+                            <option>Trabajador del mes</option>
+                            <option>Bono (No monetario)</option>
+                            <option>Premio</option>
+                            <option>Reconocimiento especial</option>
+                            <option>Mención especial</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Motivo</label>
+                        <input type="text" id="rw-reason" required class="w-full border rounded-xl p-3" />
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Observaciones</label>
+                        <textarea id="rw-notes" class="w-full border rounded-xl p-3" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="w-full mt-4 bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-2xl font-bold hover:bg-[#66d19c] shadow-lg">Guardar Reconocimiento</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Dev Role Switcher -->
+    <div class="fixed top-4 right-4 z-[100] bg-white p-2 rounded-2xl shadow-2xl border border-gray-200 text-xs font-bold flex gap-2 hidden" id="dev-role-switcher">
+        <span class="py-1 px-2 text-gray-400">Ver como:</span>
+        <div id="roles-container" class="flex gap-1"></div>
+    </div>
+
+    <!-- Message/Toast Container -->
+    <div id="toast-container" class="fixed bottom-20 md:bottom-10 left-1/2 transform -translate-x-1/2 z-[200] flex flex-col gap-2 pointer-events-none"></div>
 
     <script>
-        const iframeContainer = document.getElementById('iframe-container');
-        const appFrame = document.getElementById('app-frame');
-        const hubView = document.getElementById('hub-view');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const swipeEdge = document.getElementById('swipe-edge');
-
-        appFrame.addEventListener('load', hideLoading);
-
-        function openApp(url) {
-            if(appFrame.src !== url) {
-                loadingIndicator.style.opacity = '1';
-                loadingIndicator.style.pointerEvents = 'auto';
-                appFrame.src = url;
-                
-                // SEGURO DE VIDA: Si es una app de Vercel/React, a veces el evento de carga no se dispara. 
-                // Esto fuerza a ocultar la pantalla de "Conectando..." tras 3.5 segundos sí o sí.
-                setTimeout(hideLoading, 3500);
-            }
+        // Utils
+        const getTodayStr = () => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        };
+        const getCurrentMonthStr = () => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        };
+        const generateId = () => 'id_' + Math.random().toString(36).substr(2, 9);
+        
+        window.showToast = (msg, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-4 py-2 rounded-xl text-white font-bold text-sm shadow-lg transform transition-all duration-300 translate-y-10 opacity-0 ${type === 'success' ? 'bg-emerald-600' : 'bg-red-600'}`;
+            toast.textContent = msg;
+            container.appendChild(toast);
             
-            hubView.style.transform = 'scale(0.92)';
-            hubView.style.opacity = '0';
-            
-            iframeContainer.style.transform = ''; 
-            iframeContainer.classList.add('active');
-            swipeEdge.classList.add('active');
-        }
-
-        function hideLoading() {
-            if(appFrame.src !== 'about:blank' && appFrame.src !== window.location.href) {
-                loadingIndicator.style.opacity = '0';
-                setTimeout(() => {
-                    loadingIndicator.style.pointerEvents = 'none';
-                }, 500);
-            }
-        }
-
-        function goHome() {
-            iframeContainer.style.transform = ''; 
-            iframeContainer.classList.remove('active');
-            swipeEdge.classList.remove('active');
-            
-            hubView.style.transform = 'scale(1)';
-            hubView.style.opacity = '1';
-            
-            // Liberar memoria RAM
+            requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
             setTimeout(() => {
-                appFrame.src = 'about:blank';
-                loadingIndicator.style.opacity = '1';
-            }, 400);
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        };
+
+        const specialtiesList = ["Animador", "Recreacionista", "Personajes", "DJ", "Fotografía", "Video", "Logística", "Montaje", "Coordinación", "Pintucaritas", "Otros"];
+
+        // Application State
+        window.appState = {
+            user: null, // Será inicializado tras el falso login
+            role: 'ADMIN',
+            userProfile: { name: 'Admin Principal', uid: 'admin-123' },
+            currentView: 'dashboard',
+            selectedWorkerId: null,
+            activeProfileTab: 'personal',
+            
+            // Collections (Loaded from LocalStorage)
+            workers: [],
+            availability: [],
+            pointMovements: [],
+            rewards: [],
+            
+            // Temporary UI states
+            searchQuery: '',
+            filterRole: 'Todos',
+            selectedDate: getTodayStr(),
+            selectedMonth: getCurrentMonthStr(),
+            pointFormType: 'positive',
+            formSpecialties: []
+        };
+
+        const DB_PREFIX = 'hr_v2_';
+
+        function seedInitialData() {
+            if (!localStorage.getItem(DB_PREFIX + 'workers')) {
+                console.log("Sembrando datos iniciales de prueba...");
+                const seedWorkers = [
+                    { id: generateId(), name: 'Carlos Pérez', role: 'Animador', idNumber: '10203040', phone: '3001234567', email: 'carlos@demo.com', city: 'Bogotá', address: 'Calle Falsa 123', status: 'active', specialties: ['Animador', 'Personajes'], joinDate: '2025-01-15' },
+                    { id: generateId(), name: 'María González', role: 'Coordinador', idNumber: '50607080', phone: '3109876543', email: 'maria@demo.com', city: 'Medellín', address: 'Cra 45 # 12-34', status: 'active', specialties: ['Coordinación'], joinDate: '2024-11-20' },
+                    { id: generateId(), name: 'Juan Rodríguez', role: 'DJ', idNumber: '90102030', phone: '3201112233', email: 'juan@demo.com', city: 'Cali', address: 'Av Siempre Viva', status: 'active', specialties: ['DJ', 'Montaje'], joinDate: '2026-03-10' }
+                ];
+                
+                const seedPoints = [
+                    { id: generateId(), workerId: seedWorkers[0].id, points: 10, type: 'positive', reason: 'Excelente actitud', notes: 'En evento corporativo', date: getTodayStr(), month: getCurrentMonthStr(), evaluatorName: 'Admin Principal' },
+                    { id: generateId(), workerId: seedWorkers[0].id, points: 5, type: 'positive', reason: 'Puntualidad', notes: '', date: getTodayStr(), month: getCurrentMonthStr(), evaluatorName: 'Admin Principal' },
+                    { id: generateId(), workerId: seedWorkers[1].id, points: 12, type: 'positive', reason: 'Buena coordinación', notes: '', date: getTodayStr(), month: getCurrentMonthStr(), evaluatorName: 'Admin Principal' },
+                ];
+
+                const seedAvailability = [
+                    { id: generateId(), workerId: seedWorkers[0].id, date: getTodayStr(), status: 'available', notes: 'Turno mañana' },
+                    { id: generateId(), workerId: seedWorkers[2].id, date: getTodayStr(), status: 'unavailable', notes: 'Universidad' }
+                ];
+
+                localStorage.setItem(DB_PREFIX + 'workers', JSON.stringify(seedWorkers));
+                localStorage.setItem(DB_PREFIX + 'pointMovements', JSON.stringify(seedPoints));
+                localStorage.setItem(DB_PREFIX + 'availability', JSON.stringify(seedAvailability));
+                localStorage.setItem(DB_PREFIX + 'rewards', JSON.stringify([]));
+            }
         }
 
-        // --- Lógica Inmersiva de Gestos (Edge Swipe tipo iOS) ---
-        let touchStartX = 0;
+        function getDb(collectionName) {
+            return JSON.parse(localStorage.getItem(DB_PREFIX + collectionName) || '[]');
+        }
 
-        swipeEdge.addEventListener('touchstart', (e) => {
-            touchStartX = e.changedTouches[0].screenX;
-        }, {passive: true});
+        function setDb(collectionName, data) {
+            localStorage.setItem(DB_PREFIX + collectionName, JSON.stringify(data));
+            syncData(); // Re-render every time DB changes
+        }
 
-        swipeEdge.addEventListener('touchmove', (e) => {
-            let currentX = e.changedTouches[0].screenX;
-            let deltaX = currentX - touchStartX;
+        function syncData() {
+            window.appState.workers = getDb('workers');
+            window.appState.availability = getDb('availability');
+            window.appState.pointMovements = getDb('pointMovements');
+            window.appState.rewards = getDb('rewards');
+            reRenderCurrentView();
+        }
+
+        window.onload = () => {
+            seedInitialData();
             
-            if (deltaX > 0) {
-                iframeContainer.style.transition = 'none';
-                iframeContainer.style.transform = `translateX(${deltaX}px) scale(1) translateZ(0)`;
+            // Simular un retraso de conexión para cargar la UI y dar sensación de app real
+            setTimeout(() => {
+                // "Iniciar Sesión"
+                window.appState.user = { uid: 'local-123' };
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('app-layout').classList.remove('hidden');
+                document.getElementById('dev-role-switcher').classList.remove('hidden');
+                
+                syncData();
+                updateNavigation();
+                window.navigateTo('dashboard');
+                renderDevRoles();
+            }, 1500);
+        };
+
+        window.appSignOut = () => {
+            // Recargar la página simula el cierre de sesión local
+            window.location.reload();
+        };
+
+        const navItems = [
+            { id: 'dashboard', icon: 'layout-dashboard', label: 'Inicio', roles: ['ADMIN', 'HR', 'COORD'] },
+            { id: 'workers', icon: 'users', label: 'Equipo', roles: ['ADMIN', 'HR', 'COORD', 'WORKER'] },
+            { id: 'availability', icon: 'calendar-days', label: 'Agenda', roles: ['ADMIN', 'HR', 'COORD', 'WORKER'] },
+            { id: 'performance', icon: 'star', label: 'Ranking', roles: ['ADMIN', 'HR', 'COORD'] },
+            { id: 'rewards', icon: 'award', label: 'Premios', roles: ['ADMIN', 'HR', 'COORD', 'WORKER'] },
+        ];
+
+        function updateNavigation() {
+            const role = window.appState.role;
+            const allowed = navItems.filter(item => item.roles.includes(role));
+            
+            // Desktop
+            const dNav = document.getElementById('desktop-nav');
+            dNav.innerHTML = allowed.map(item => `
+                <button onclick="window.navigateTo('${item.id}')"
+                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af] text-[#0d4e46] shadow-lg shadow-[#7be4af]/20' : 'text-gray-300 hover:bg-[#146459] hover:text-white'}">
+                    <i data-lucide="${item.icon}" class="w-5 h-5"></i> ${item.label}
+                </button>
+            `).join('');
+
+            // Mobile (Max 4 items)
+            const mNav = document.getElementById('mobile-nav');
+            mNav.innerHTML = allowed.slice(0,4).map(item => `
+                <button onclick="window.navigateTo('${item.id}')" 
+                    class="flex flex-col items-center gap-1.5 transition-colors ${window.appState.currentView === item.id ? 'text-[#0d4e46]' : 'text-gray-400'}">
+                    <div class="p-2.5 rounded-2xl transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af]/20 text-[#0d4e46]' : ''}">
+                        <i data-lucide="${item.icon}" class="w-5 h-5 ${window.appState.currentView === item.id ? 'stroke-[2.5px]' : 'stroke-2'}"></i>
+                    </div>
+                    <span class="text-[10px] font-bold">${item.label}</span>
+                </button>
+            `).join('');
+
+            document.getElementById('user-role-label').innerText = role;
+            document.getElementById('user-name').innerText = window.appState.userProfile.name;
+            lucide.createIcons();
+        }
+
+        window.navigateTo = (view) => {
+            window.appState.currentView = view;
+            window.appState.selectedWorkerId = null;
+            updateNavigation();
+            reRenderCurrentView();
+        };
+
+        window.viewWorkerProfile = (id) => {
+            window.appState.selectedWorkerId = id;
+            window.appState.currentView = 'profile';
+            window.appState.activeProfileTab = 'personal';
+            reRenderCurrentView();
+        };
+
+        function reRenderCurrentView() {
+            const container = document.getElementById('views-container');
+            container.innerHTML = '';
+            container.className = 'flex-1 overflow-hidden p-6 md:p-8 relative fade-in';
+            
+            switch(window.appState.currentView) {
+                case 'dashboard': container.innerHTML = buildDashboard(); break;
+                case 'workers': container.innerHTML = buildWorkersList(); break;
+                case 'profile': container.innerHTML = buildWorkerProfile(); break;
+                case 'availability': container.innerHTML = buildAvailability(); break;
+                case 'performance': container.innerHTML = buildPerformance(); break;
+                case 'rewards': container.innerHTML = buildRewards(); break;
             }
-        }, {passive: true});
+            lucide.createIcons();
+        }
 
-        swipeEdge.addEventListener('touchend', (e) => {
-            let touchEndX = e.changedTouches[0].screenX;
-            let deltaX = touchEndX - touchStartX;
+        // Modals Logic
+        window.openModal = (id) => document.getElementById(id).classList.add('active');
+        window.closeModal = (id) => document.getElementById(id).classList.remove('active');
+
+        function buildDashboard() {
+            const { workers, availability, pointMovements, userProfile } = window.appState;
+            const currentMonth = getCurrentMonthStr();
+            const today = getTodayStr();
+
+            const activeWorkers = workers.filter(w => w.status === 'active').length;
+            const availabilitiesToday = availability.filter(a => a.date === today);
+            const availableToday = availabilitiesToday.filter(a => a.status === 'available').length;
+            const unavailableToday = availabilitiesToday.filter(a => a.status === 'unavailable').length;
             
-            iframeContainer.style.transition = ''; 
+            const monthlyPoints = pointMovements.filter(p => p.month === currentMonth);
+            const scores = {};
+            monthlyPoints.forEach(p => {
+                scores[p.workerId] = (scores[p.workerId] || 0) + (p.type === 'positive' ? Number(p.points) : -Number(p.points));
+            });
+            const avgPoints = Object.keys(scores).length > 0 ? Math.round(Object.values(scores).reduce((a,b)=>a+b, 0) / Object.keys(scores).length) : 0;
+            
+            const topWorkerId = Object.keys(scores).sort((a,b) => scores[b] - scores[a])[0];
+            const topWorker = topWorkerId ? workers.find(w => w.id === topWorkerId) : null;
 
-            if (deltaX > 70) { 
-                goHome(); // Si deslizó más de 70px, regresamos al Hub
+            return `
+                <div class="space-y-8 pb-24 md:pb-8 h-full overflow-y-auto pr-2">
+                    <div class="bg-[#0d4e46] md:bg-transparent -mx-6 md:mx-0 -mt-6 md:mt-0 p-8 md:p-0 text-white md:text-[#0d4e46] rounded-b-4xl md:rounded-none">
+                        <h1 class="text-3xl font-black mb-1">Hola, ${userProfile.name.split(' ')[0]}</h1>
+                        <p class="text-[#7be4af] md:text-gray-500 font-medium">Resumen de ${new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
+                        
+                        <div class="flex justify-between items-end mt-8 border-b border-[#146459] md:border-gray-200 pb-6">
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-[#7be4af] md:text-[#0d4e46] mb-1">${activeWorkers}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 w-20 leading-tight mx-auto font-medium uppercase tracking-wider">Activos Total</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-white md:text-[#7be4af] mb-1">${availableToday}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 w-20 leading-tight mx-auto font-medium uppercase tracking-wider">Disp. Hoy</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-5xl font-black text-[#7be4af] md:text-[#0d4e46] mb-1">${avgPoints}</p>
+                                <p class="text-xs text-gray-300 md:text-gray-500 w-20 leading-tight mx-auto font-medium uppercase tracking-wider">Prom. Puntos</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div onclick="window.navigateTo('workers')" class="bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-3xl p-6 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center"><i data-lucide="users"></i></div>
+                                <div><h3 class="font-bold text-gray-800">Directorio</h3><p class="text-sm text-gray-500">Gestión personal</p></div>
+                            </div>
+                        </div>
+                        <div onclick="window.navigateTo('availability')" class="bg-gradient-to-br from-white to-emerald-50 border border-emerald-100 rounded-3xl p-6 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center"><i data-lucide="calendar-days"></i></div>
+                                <div><h3 class="font-bold text-gray-800">Disponibilidad</h3><p class="text-sm text-gray-500">${unavailableToday} no disp. hoy</p></div>
+                            </div>
+                        </div>
+                        <div onclick="window.navigateTo('performance')" class="bg-gradient-to-br from-white to-purple-50 border border-purple-100 rounded-3xl p-6 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center"><i data-lucide="star"></i></div>
+                                <div><h3 class="font-bold text-gray-800">Rendimiento</h3><p class="text-sm text-gray-500">Ranking mensual</p></div>
+                            </div>
+                        </div>
+                        <div onclick="window.navigateTo('rewards')" class="bg-gradient-to-br from-white to-amber-50 border border-amber-100 rounded-3xl p-6 cursor-pointer hover:shadow-lg transition-all">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center"><i data-lucide="award"></i></div>
+                                <div><h3 class="font-bold text-gray-800">Premios</h3><p class="text-sm text-gray-500">Reconocimientos</p></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${topWorker ? `
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2"><i data-lucide="trending-up" class="text-[#7be4af] w-5 h-5"></i> Destacado del Mes</h2>
+                        <div class="overflow-hidden bg-gradient-to-r from-[#0d4e46] to-[#146459] rounded-3xl shadow-xl">
+                            <div class="p-6 flex items-center gap-6">
+                                <div class="relative">
+                                    <img src="${topWorker.image || `https://ui-avatars.com/api/?name=${topWorker.name}&background=7be4af&color=0d4e46`}" class="w-20 h-20 rounded-full border-4 border-white/20 object-cover" />
+                                    <div class="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 p-1.5 rounded-full shadow-lg border-2 border-white">
+                                        <i data-lucide="award" class="w-4 h-4"></i>
+                                    </div>
+                                </div>
+                                <div class="text-white flex-1">
+                                    <p class="text-[#7be4af] font-black text-xs uppercase tracking-widest mb-1">Líder en Puntos</p>
+                                    <h3 class="text-2xl font-bold">${topWorker.name}</h3>
+                                    <p class="opacity-80 text-sm mt-1">${topWorker.role} • ${scores[topWorker.id]} pts</p>
+                                </div>
+                                <div class="hidden md:block">
+                                    <button onclick="window.openWhatsApp('${topWorker.phone}', '¡Felicidades por liderar el ranking este mes!')" class="bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#1EBE5D] transition-colors shadow-sm">
+                                        <i data-lucide="message-circle" class="w-4 h-4"></i> Felicitar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+        window.setSearchQuery = (val) => { window.appState.searchQuery = val; reRenderCurrentView(); };
+        window.setFilterRole = (val) => { window.appState.filterRole = val; reRenderCurrentView(); };
+
+        function buildWorkersList() {
+            const { workers, searchQuery, filterRole, role } = window.appState;
+            const rolesList = ["Todos", ...new Set(workers.map(w => w.role))].filter(Boolean);
+            
+            const filtered = workers.filter(w => {
+                const ms = w.name?.toLowerCase().includes(searchQuery.toLowerCase()) || w.idNumber?.includes(searchQuery);
+                const mr = filterRole === "Todos" || w.role === filterRole;
+                return ms && mr;
+            });
+
+            const canEdit = ['ADMIN', 'HR'].includes(role);
+
+            return `
+                <div class="h-full flex flex-col pb-20 md:pb-0 space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-gray-800">Directorio de Equipo</h1>
+                            <p class="text-gray-500 text-sm">Gestiona la información de todo el personal.</p>
+                        </div>
+                        ${canEdit ? `<button onclick="window.openWorkerForm()" class="bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-2xl font-bold hover:bg-[#66d19c] transition-colors shadow-lg flex items-center gap-2"><i data-lucide="user-plus" class="w-4 h-4"></i> Nuevo Trabajador</button>` : ''}
+                    </div>
+
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <div class="relative flex-1">
+                            <i data-lucide="search" class="absolute left-4 top-3.5 text-gray-400 w-5 h-5"></i>
+                            <input type="text" placeholder="Buscar por nombre o cédula..." 
+                                class="w-full bg-white border border-gray-200 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-[#7be4af] focus:ring-2 focus:ring-[#7be4af]/20"
+                                value="${searchQuery}" oninput="window.setSearchQuery(this.value)" />
+                        </div>
+                        <div class="flex gap-2 overflow-x-auto hide-scrollbar pb-2 md:pb-0">
+                            ${rolesList.map(r => `
+                                <button onclick="window.setFilterRole('${r}')" class="px-4 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-colors ${filterRole === r ? 'bg-[#0d4e46] text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}">${r}</button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto flex-1 pr-2">
+                        ${filtered.length === 0 ? '<p class="text-gray-500 col-span-full text-center py-10">No se encontraron trabajadores.</p>' : 
+                        filtered.map(w => `
+                            <div onclick="window.viewWorkerProfile('${w.id}')" class="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm cursor-pointer hover:shadow-lg hover:border-[#7be4af] transition-all flex items-start gap-4">
+                                <img src="${w.image || `https://ui-avatars.com/api/?name=${w.name}&background=f3f4f6&color=374151`}" class="w-16 h-16 rounded-2xl object-cover shadow-sm" />
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-start">
+                                        <h3 class="font-bold text-gray-800 truncate">${w.name}</h3>
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold ${w.status === 'active' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200' : 'bg-gray-100 text-gray-500 border border-gray-200'}">${w.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                    </div>
+                                    <p class="text-sm text-[#146459] font-semibold mt-0.5 truncate">${w.role}</p>
+                                    <div class="flex gap-2 mt-3 flex-wrap">
+                                        ${(w.specialties || []).slice(0,2).map(s => `<span class="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md font-medium uppercase tracking-wider">${s}</span>`).join('')}
+                                        ${(w.specialties || []).length > 2 ? `<span class="bg-gray-100 text-gray-500 text-[10px] px-2 py-1 rounded-md">+${w.specialties.length - 2}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openWhatsApp = (phone, msg = '') => {
+            window.open(`https://wa.me/57${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+        };
+
+        window.toggleSpecialty = (sp) => {
+            const arr = window.appState.formSpecialties;
+            if(arr.includes(sp)) window.appState.formSpecialties = arr.filter(s => s !== sp);
+            else window.appState.formSpecialties.push(sp);
+            renderSpecialtiesToggles();
+        };
+
+        function renderSpecialtiesToggles() {
+            const container = document.getElementById('w-specialties-container');
+            if(!container) return;
+            container.innerHTML = specialtiesList.map(sp => {
+                const isActive = window.appState.formSpecialties.includes(sp);
+                return `<button type="button" onclick="window.toggleSpecialty('${sp}')" class="px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors ${isActive ? 'bg-[#146459] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${sp}</button>`;
+            }).join('');
+        }
+
+        window.openWorkerForm = (id = null) => {
+            const isEdit = id != null;
+            document.getElementById('worker-modal-title').innerText = isEdit ? "Editar Trabajador" : "Nuevo Trabajador";
+            const form = document.getElementById('worker-form');
+            form.reset();
+            window.appState.formSpecialties = [];
+            
+            const bankSection = document.getElementById('bank-section-form');
+            if(['ADMIN', 'HR'].includes(window.appState.role)) {
+                bankSection.style.display = 'block';
             } else {
-                iframeContainer.style.transform = ''; // Si se arrepintió, vuelve a su lugar
+                bankSection.style.display = 'none';
             }
-        });
-    </script>
 
+            if(isEdit) {
+                const w = window.appState.workers.find(x => x.id === id);
+                if(w) {
+                    document.getElementById('w-id').value = w.id;
+                    document.getElementById('w-name').value = w.name || '';
+                    document.getElementById('w-idNumber').value = w.idNumber || '';
+                    document.getElementById('w-phone').value = w.phone || '';
+                    document.getElementById('w-email').value = w.email || '';
+                    document.getElementById('w-city').value = w.city || '';
+                    document.getElementById('w-address').value = w.address || '';
+                    document.getElementById('w-emergContact').value = w.emergencyContact || '';
+                    document.getElementById('w-emergPhone').value = w.emergencyPhone || '';
+                    document.getElementById('w-role').value = w.role || '';
+                    document.getElementById('w-status').value = w.status || 'active';
+                    window.appState.formSpecialties = w.specialties || [];
+                    
+                    if(w.bank) {
+                        document.getElementById('w-bankName').value = w.bank.bankName || '';
+                        document.getElementById('w-bankType').value = w.bank.type || '';
+                        document.getElementById('w-bankNum').value = w.bank.number || '';
+                        document.getElementById('w-bankOwner').value = w.bank.owner || '';
+                    }
+                }
+            } else {
+                document.getElementById('w-id').value = '';
+            }
+            renderSpecialtiesToggles();
+            window.openModal('modal-worker');
+        };
+
+        window.saveWorker = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('w-id').value;
+            
+            const data = {
+                name: document.getElementById('w-name').value,
+                idNumber: document.getElementById('w-idNumber').value,
+                phone: document.getElementById('w-phone').value,
+                email: document.getElementById('w-email').value,
+                city: document.getElementById('w-city').value,
+                address: document.getElementById('w-address').value,
+                emergencyContact: document.getElementById('w-emergContact').value,
+                emergencyPhone: document.getElementById('w-emergPhone').value,
+                role: document.getElementById('w-role').value,
+                status: document.getElementById('w-status').value,
+                specialties: window.appState.formSpecialties,
+            };
+
+            if(['ADMIN', 'HR'].includes(window.appState.role)) {
+                data.bank = {
+                    bankName: document.getElementById('w-bankName').value,
+                    type: document.getElementById('w-bankType').value,
+                    number: document.getElementById('w-bankNum').value,
+                    owner: document.getElementById('w-bankOwner').value,
+                };
+            }
+
+            let workers = getDb('workers');
+
+            if(id) {
+                // Update
+                workers = workers.map(w => w.id === id ? { ...w, ...data } : w);
+                window.showToast("Trabajador actualizado");
+            } else {
+                // Create
+                data.id = generateId();
+                data.joinDate = getTodayStr();
+                workers.push(data);
+                window.showToast("Trabajador creado");
+            }
+
+            setDb('workers', workers);
+            window.closeModal('modal-worker');
+        };
+
+        window.setProfileTab = (tab) => { window.appState.activeProfileTab = tab; reRenderCurrentView(); };
+
+        function buildWorkerProfile() {
+            const { workers, pointMovements, selectedWorkerId, activeProfileTab, role } = window.appState;
+            const worker = workers.find(w => w.id === selectedWorkerId);
+            if(!worker) return '';
+
+            const canSeeBankInfo = ['ADMIN', 'HR'].includes(role);
+            const canEvaluate = ['ADMIN', 'HR', 'COORD'].includes(role);
+            
+            const workerPoints = pointMovements.filter(p => p.workerId === worker.id).sort((a,b) => new Date(b.date) - new Date(a.date));
+            const totalPoints = workerPoints.reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
+            const currentMonth = getCurrentMonthStr();
+            const monthPoints = workerPoints.filter(p => p.month === currentMonth).reduce((acc, curr) => acc + (curr.type === 'positive' ? Number(curr.points) : -Number(curr.points)), 0);
+
+            const tabs = [
+                { id: 'personal', label: 'Personal', icon: 'user' },
+                { id: 'labor', label: 'Laboral', icon: 'briefcase' },
+                ...(canSeeBankInfo ? [{ id: 'bank', label: 'Bancaria', icon: 'credit-card' }] : []),
+                { id: 'points', label: 'Rendimiento', icon: 'star' },
+                { id: 'docs', label: 'Documentos', icon: 'file-text' }
+            ];
+
+            let tabContent = '';
+            if(activeProfileTab === 'personal') {
+                tabContent = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                            <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2"><i data-lucide="user" class="text-gray-400 w-4 h-4"></i> Datos Básicos</h3>
+                            <div class="space-y-4">
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Documento</p><p class="font-medium">${worker.idNumber || 'N/A'}</p></div>
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Ciudad y Dirección</p><p class="font-medium">${worker.city || 'N/A'} - ${worker.address || 'N/A'}</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                            <h3 class="font-bold text-gray-800 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2"><i data-lucide="phone" class="text-gray-400 w-4 h-4"></i> Contacto</h3>
+                            <div class="space-y-4">
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Teléfono / WhatsApp</p><p class="font-medium">${worker.phone || 'N/A'}</p></div>
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Correo Electrónico</p><p class="font-medium">${worker.email || 'N/A'}</p></div>
+                                <div class="bg-red-50 p-3 rounded-xl border border-red-100 mt-2">
+                                    <p class="text-xs text-red-400 font-bold uppercase mb-1">Contacto de Emergencia</p>
+                                    <p class="font-bold text-red-700">${worker.emergencyContact || 'N/A'}</p>
+                                    <p class="text-sm text-red-600 font-medium flex items-center gap-1 mt-1"><i data-lucide="phone-call" class="w-3 h-3"></i> ${worker.emergencyPhone || 'N/A'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (activeProfileTab === 'labor') {
+                tabContent = `
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                        <div class="flex justify-between items-start border-b border-gray-100 pb-3 mb-4">
+                            <h3 class="font-bold text-gray-800 flex items-center gap-2"><i data-lucide="briefcase" class="text-gray-400 w-4 h-4"></i> Perfil Profesional</h3>
+                            ${['ADMIN', 'HR'].includes(role) ? `<button onclick="window.openWorkerForm('${worker.id}')" class="text-xs font-bold bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-200">Editar</button>` : ''}
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><p class="text-xs text-gray-400 font-semibold uppercase mb-1">Cargo Principal</p><p class="font-bold text-lg text-[#0d4e46]">${worker.role || 'N/A'}</p></div>
+                            <div><p class="text-xs text-gray-400 font-semibold uppercase mb-1">Fecha de Ingreso</p><p class="font-medium">${worker.joinDate || 'N/A'}</p></div>
+                            <div class="col-span-1 md:col-span-2">
+                                <p class="text-xs text-gray-400 font-semibold uppercase mb-2">Especialidades</p>
+                                <div class="flex flex-wrap gap-2">
+                                    ${(worker.specialties||[]).map(s => `<span class="bg-[#7be4af]/20 text-[#0d4e46] px-3 py-1.5 rounded-lg font-semibold text-sm border border-[#7be4af]/30">${s}</span>`).join('')}
+                                    ${(worker.specialties||[]).length === 0 ? '<p class="text-gray-400 text-sm">No especificadas.</p>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (activeProfileTab === 'bank' && canSeeBankInfo) {
+                tabContent = `
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm border-l-4 border-l-purple-500">
+                        <div class="flex items-center gap-3 mb-6 bg-purple-50 p-4 rounded-2xl border border-purple-100">
+                            <i data-lucide="shield-alert" class="text-purple-600 w-6 h-6"></i>
+                            <div>
+                                <h3 class="font-bold text-purple-900">Información Confidencial</h3>
+                                <p class="text-xs text-purple-700 mt-0.5">Estos datos son exclusivos para fines administrativos.</p>
+                            </div>
+                        </div>
+                        ${worker.bank && worker.bank.bankName ? `
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Banco</p><p class="font-bold text-lg">${worker.bank.bankName}</p></div>
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Tipo de Cuenta</p><p class="font-medium">${worker.bank.type}</p></div>
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Número de Cuenta</p><p class="font-mono bg-gray-100 px-3 py-1 rounded-lg inline-block mt-1">${worker.bank.number}</p></div>
+                                <div><p class="text-xs text-gray-400 font-semibold uppercase">Titular</p><p class="font-medium">${worker.bank.owner}</p></div>
+                            </div>
+                        ` : `
+                            <div class="text-center py-10">
+                                <p class="text-gray-500 font-medium">No hay información bancaria registrada.</p>
+                            </div>
+                        `}
+                    </div>
+                `;
+            } else if (activeProfileTab === 'points') {
+                tabContent = `
+                    <div class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex justify-between items-center bg-gradient-to-r from-[#0d4e46] to-[#146459] p-6 rounded-3xl text-white shadow-lg">
+                                <div>
+                                    <p class="text-[#7be4af] font-semibold text-sm uppercase tracking-wider mb-1">Rendimiento Histórico</p>
+                                    <h3 class="text-4xl font-black flex items-center gap-2">${totalPoints} <span class="text-lg font-medium text-gray-300">pts</span></h3>
+                                </div>
+                            </div>
+                            ${canEvaluate ? `
+                                <div class="bg-white p-6 rounded-3xl border border-gray-200 flex flex-col justify-center items-center text-center shadow-sm">
+                                    <h4 class="font-bold text-gray-800 mb-2">Registrar Evaluación</h4>
+                                    <button onclick="window.openModal('modal-points')" class="w-full bg-[#7be4af] text-[#0d4e46] py-2 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-[#66d19c] transition-colors"><i data-lucide="star" class="w-4 h-4"></i> Evaluar</button>
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
+                            <h3 class="font-bold text-gray-800 mb-4">Historial de Evaluaciones</h3>
+                            <div class="space-y-3">
+                                ${workerPoints.length === 0 ? '<p class="text-gray-400 text-center py-4">No hay registros.</p>' : 
+                                workerPoints.map(p => `
+                                    <div class="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-2xl gap-4">
+                                        <div class="flex gap-4 items-center">
+                                            <div class="w-12 h-12 rounded-xl flex items-center justify-center font-black text-lg shrink-0 ${p.type === 'positive' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">
+                                                ${p.type === 'positive' ? '+' : '-'}${p.points}
+                                            </div>
+                                            <div>
+                                                <h4 class="font-bold text-gray-800">${p.reason}</h4>
+                                                <p class="text-xs text-gray-500 mt-1">${p.notes || ''}</p>
+                                            </div>
+                                        </div>
+                                        <div class="text-left md:text-right text-xs text-gray-400 space-y-1">
+                                            <p class="font-bold uppercase bg-gray-100 inline-block px-2 py-1 rounded-md">${p.date}</p>
+                                            <p>Mes eval: ${p.month}</p>
+                                            <p>Por: ${p.evaluatorName}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if (activeProfileTab === 'docs') {
+                 tabContent = `
+                    <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm text-center py-10">
+                        <i data-lucide="file-text" class="w-12 h-12 text-gray-300 mx-auto mb-3"></i>
+                        <h3 class="font-bold text-gray-800">Repositorio Documental</h3>
+                        <p class="text-sm text-gray-500">Módulo local. Requiere servidor de archivos (S3, Firebase Storage) para subir documentos reales.</p>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="h-full flex flex-col pb-20 md:pb-0">
+                    <div class="flex justify-between items-center mb-6">
+                        <button onclick="window.navigateTo('workers')" class="flex items-center gap-2 text-gray-500 hover:text-[#0d4e46] font-medium transition-colors bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+                            <i data-lucide="chevron-left" class="w-4 h-4"></i> Volver
+                        </button>
+                        <button onclick="window.openWhatsApp('${worker.phone}', 'Hola ${worker.name.split(' ')[0]}, ')" class="bg-[#25D366] text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 hover:bg-[#1EBE5D] transition-colors shadow-sm">
+                            <i data-lucide="message-circle" class="w-4 h-4"></i> WhatsApp
+                        </button>
+                    </div>
+
+                    <div class="mb-6 bg-[#0d4e46] text-white overflow-hidden relative rounded-3xl">
+                        <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+                        <div class="p-8 flex flex-col md:flex-row items-center gap-6 relative z-10">
+                            <img src="${worker.image || `https://ui-avatars.com/api/?name=${worker.name}&background=ffffff&color=0d4e46&size=200`}" class="w-28 h-28 rounded-3xl border-4 border-white/20 object-cover shadow-2xl bg-white" />
+                            <div class="text-center md:text-left flex-1">
+                                <h2 class="text-3xl font-black">${worker.name}</h2>
+                                <p class="text-[#7be4af] font-semibold text-lg">${worker.role}</p>
+                                <div class="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${worker.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}">${worker.status === 'active' ? 'Activo' : 'Inactivo'}</span>
+                                    <span class="flex items-center gap-1 text-sm bg-white/10 px-3 py-1 rounded-full"><i data-lucide="star" class="text-yellow-400 w-3 h-3 fill-current"></i> Mes actual: ${monthPoints} pts</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 mb-6 overflow-x-auto hide-scrollbar border-b border-gray-200 pb-2">
+                        ${tabs.map(t => `
+                            <button onclick="window.setProfileTab('${t.id}')" class="flex items-center gap-2 px-5 py-3 rounded-2xl font-bold text-sm transition-all whitespace-nowrap ${activeProfileTab === t.id ? 'bg-[#0d4e46] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}">
+                                <i data-lucide="${t.icon}" class="w-4 h-4"></i> ${t.label}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-2 pb-6">
+                        ${tabContent}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setPointType = (type) => {
+            window.appState.pointFormType = type;
+            const btnPos = document.getElementById('btn-pt-pos');
+            const btnNeg = document.getElementById('btn-pt-neg');
+            if(type === 'positive') {
+                btnPos.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-green-50 border-green-500 text-green-700";
+                btnNeg.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500";
+            } else {
+                btnNeg.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-red-50 border-red-500 text-red-700";
+                btnPos.className = "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 border bg-white border-gray-200 text-gray-500";
+            }
+        };
+
+        window.savePoints = (e) => {
+            e.preventDefault();
+            const pointsData = {
+                id: generateId(),
+                workerId: window.appState.selectedWorkerId,
+                points: Number(document.getElementById('pt-amount').value),
+                type: window.appState.pointFormType,
+                reason: document.getElementById('pt-reason').value,
+                notes: document.getElementById('pt-notes').value,
+                date: getTodayStr(),
+                month: getCurrentMonthStr(),
+                evaluatorId: window.appState.userProfile.uid,
+                evaluatorName: window.appState.userProfile.name
+            };
+            
+            const pointsDb = getDb('pointMovements');
+            pointsDb.push(pointsData);
+            setDb('pointMovements', pointsDb);
+            
+            window.closeModal('modal-points');
+            window.showToast("Evaluación guardada");
+            document.getElementById('pt-reason').value = '';
+            document.getElementById('pt-notes').value = '';
+        };
+
+        window.setDateFilter = (val) => { window.appState.selectedDate = val; reRenderCurrentView(); };
+
+        window.updateStatus = (workerId, newStatus) => {
+            if(!['ADMIN', 'HR', 'COORD'].includes(window.appState.role)) return;
+            const note = prompt(`Añadir nota opcional para el estado '${newStatus}':`, "");
+            if(note === null) return;
+            
+            const availDb = getDb('availability');
+            const existingIndex = availDb.findIndex(a => a.workerId === workerId && a.date === window.appState.selectedDate);
+            
+            const data = { id: existingIndex >= 0 ? availDb[existingIndex].id : generateId(), workerId, date: window.appState.selectedDate, status: newStatus, notes: note };
+            
+            if (existingIndex >= 0) {
+                availDb[existingIndex] = data; // Update
+            } else {
+                availDb.push(data); // Insert
+            }
+            
+            setDb('availability', availDb);
+            window.showToast("Disponibilidad actualizada");
+        };
+
+        function buildAvailability() {
+            const { workers, availability, selectedDate, role } = window.appState;
+            const dailyRecords = availability.filter(a => a.date === selectedDate);
+            
+            const mapped = workers.filter(w=>w.status==='active').map(w => {
+                const record = dailyRecords.find(r => r.workerId === w.id);
+                return { worker: w, status: record ? record.status : 'pending', notes: record ? record.notes : '' };
+            });
+
+            const available = mapped.filter(w => w.status === 'available');
+            const unavailable = mapped.filter(w => w.status === 'unavailable');
+            const pending = mapped.filter(w => w.status === 'pending');
+
+            const canEdit = ['ADMIN', 'HR', 'COORD'].includes(role);
+
+            return `
+                <div class="h-full flex flex-col pb-20 md:pb-0 space-y-6">
+                    <div>
+                        <h1 class="text-2xl font-black text-gray-800">Calendario de Disponibilidad</h1>
+                        <p class="text-gray-500 text-sm">Gestiona la disponibilidad del equipo por fecha.</p>
+                    </div>
+
+                    <div class="bg-[#0d4e46] text-white rounded-3xl p-6 shrink-0">
+                        <div class="flex flex-col md:flex-row items-center gap-6 justify-between">
+                            <div class="w-full md:w-auto">
+                                <label class="block text-[#7be4af] font-bold text-xs uppercase tracking-wider mb-2">Seleccionar Fecha</label>
+                                <input type="date" value="${selectedDate}" onchange="window.setDateFilter(this.value)"
+                                    class="w-full md:w-64 bg-white/10 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:ring-2 focus:ring-[#7be4af] [&::-webkit-calendar-picker-indicator]:filter [&::-webkit-calendar-picker-indicator]:invert" />
+                            </div>
+                            <div class="flex gap-8 text-center">
+                                <div><p class="text-3xl font-black text-[#7be4af]">${available.length}</p><p class="text-xs font-medium uppercase mt-1 opacity-80">Disp.</p></div>
+                                <div><p class="text-3xl font-black text-red-400">${unavailable.length}</p><p class="text-xs font-medium uppercase mt-1 opacity-80">No Disp.</p></div>
+                                <div><p class="text-3xl font-black text-gray-400">${pending.length}</p><p class="text-xs font-medium uppercase mt-1 opacity-80">S/Confir</p></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-6">
+                        <!-- Available -->
+                        <div>
+                            <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold">Disponibles</span></h3>
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                ${available.length === 0 ? '<p class="text-sm text-gray-400 p-4 border border-dashed rounded-2xl text-center">Nadie marcado como disponible aún.</p>' : available.map(({worker, notes}) => `
+                                    <div class="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
+                                        <div class="flex items-center gap-3">
+                                            <img src="${worker.image || `https://ui-avatars.com/api/?name=${worker.name}&background=d1fae5&color=065f46`}" class="w-10 h-10 rounded-full" />
+                                            <div>
+                                                <p class="font-bold text-sm text-gray-800">${worker.name}</p>
+                                                <p class="text-xs text-gray-500">${worker.role} ${notes ? `• ${notes}` : ''}</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 items-center">
+                                           ${canEdit ? `<button onclick="window.updateStatus('${worker.id}', 'unavailable')" class="text-xs text-red-500 font-bold hover:underline">Marcar No Disp.</button>` : ''}
+                                           <button onclick="window.openWhatsApp('${worker.phone}', 'Hola ${worker.name.split(' ')[0]}, tienes disponibilidad confirmada para el ${selectedDate}...')" class="bg-[#25D366] text-white p-2 rounded-xl"><i data-lucide="message-circle" class="w-4 h-4"></i></button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Pending -->
+                            <div>
+                                <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-bold">Pendientes</span></h3>
+                                <div class="space-y-3">
+                                    ${pending.map(({worker}) => `
+                                        <div class="bg-white p-4 rounded-2xl border border-gray-200 flex items-center justify-between">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 text-xs">${worker.name.substring(0,2).toUpperCase()}</div>
+                                                <p class="font-bold text-sm text-gray-700">${worker.name}</p>
+                                            </div>
+                                            <div class="flex gap-2">
+                                                ${canEdit ? `
+                                                    <button onclick="window.updateStatus('${worker.id}', 'available')" class="w-8 h-8 rounded-full bg-green-50 text-green-600 hover:bg-green-100 flex items-center justify-center font-bold text-lg">+</button>
+                                                    <button onclick="window.updateStatus('${worker.id}', 'unavailable')" class="w-8 h-8 rounded-full bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center font-bold text-lg">-</button>
+                                                ` : ''}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                            <!-- Unavailable -->
+                            <div>
+                                <h3 class="font-bold text-gray-800 mb-3 flex items-center gap-2"><span class="bg-red-100 text-red-700 px-3 py-1 rounded-full text-xs font-bold">No Disponibles</span></h3>
+                                <div class="space-y-3 opacity-75">
+                                    ${unavailable.map(({worker, notes}) => `
+                                        <div class="bg-gray-50 p-4 rounded-2xl border border-gray-200 flex items-center justify-between gap-3">
+                                            <div class="flex items-center gap-3">
+                                              <div class="w-10 h-10 bg-red-100 text-red-700 rounded-full flex items-center justify-center font-bold text-xs">${worker.name.substring(0,2).toUpperCase()}</div>
+                                              <div>
+                                                  <p class="font-bold text-sm text-gray-700 line-through">${worker.name}</p>
+                                                  <p class="text-xs text-red-500 font-medium">${notes || 'Sin especificar'}</p>
+                                              </div>
+                                            </div>
+                                            ${canEdit ? `<button onclick="window.updateStatus('${worker.id}', 'available')" class="text-xs text-green-600 font-bold hover:underline">Hacer Disp.</button>` : ''}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setMonthFilter = (val) => { window.appState.selectedMonth = val; reRenderCurrentView(); };
+
+        function buildPerformance() {
+            const { workers, pointMovements, selectedMonth } = window.appState;
+            const monthlyPoints = pointMovements.filter(p => p.month === selectedMonth);
+            
+            const scoresMap = {};
+            workers.filter(w=>w.status==='active').forEach(w => scoresMap[w.id] = 0);
+            
+            monthlyPoints.forEach(p => {
+                if(scoresMap[p.workerId] !== undefined) {
+                    scoresMap[p.workerId] += (p.type === 'positive' ? Number(p.points) : -Number(p.points));
+                }
+            });
+
+            const ranking = Object.keys(scoresMap)
+                .map(workerId => ({ worker: workers.find(w => w.id === workerId), score: scoresMap[workerId] }))
+                .filter(item => item.worker)
+                .sort((a, b) => b.score - a.score);
+
+            return `
+                <div class="h-full flex flex-col pb-20 md:pb-0 space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-gray-800">Ranking Mensual</h1>
+                            <p class="text-gray-500 text-sm">Rendimiento basado en evaluaciones.</p>
+                        </div>
+                        <input type="month" value="${selectedMonth}" onchange="window.setMonthFilter(this.value)"
+                            class="bg-white border border-gray-300 rounded-xl p-3 font-bold text-[#0d4e46] focus:border-[#7be4af] focus:outline-none shadow-sm w-full md:w-auto" />
+                    </div>
+
+                    <div class="flex-1 overflow-y-auto pr-2 space-y-3 pt-2">
+                        ${ranking.length === 0 ? '<p class="text-gray-500 text-center py-10">No hay datos para este mes.</p>' : 
+                        ranking.map((item, index) => {
+                            const isTop3 = index < 3;
+                            const medals = ['bg-yellow-400 text-yellow-900 border-yellow-200', 'bg-gray-300 text-gray-800 border-gray-200', 'bg-amber-600 text-amber-100 border-amber-700'];
+                            return `
+                                <div class="bg-white p-4 rounded-3xl border flex items-center gap-4 transition-all hover:shadow-md ${index === 0 ? 'border-yellow-400 shadow-lg scale-[1.02] md:scale-100' : 'border-gray-100'}">
+                                    <div class="relative w-12 flex justify-center shrink-0">
+                                        ${isTop3 ? `<div class="w-10 h-10 rounded-full flex items-center justify-center font-black shadow-md border-2 ${medals[index]}">${index + 1}</div>` 
+                                        : `<span class="font-bold text-gray-400 text-xl">#${index + 1}</span>`}
+                                    </div>
+                                    <img src="${item.worker.image || `https://ui-avatars.com/api/?name=${item.worker.name}&background=f3f4f6`}" class="w-14 h-14 rounded-2xl object-cover" />
+                                    <div class="flex-1 min-w-0">
+                                        <h3 class="font-bold truncate ${index === 0 ? 'text-lg text-[#0d4e46]' : 'text-gray-800'}">${item.worker.name}</h3>
+                                        <p class="text-xs text-gray-500 truncate">${item.worker.role}</p>
+                                    </div>
+                                    <div class="text-right shrink-0">
+                                        <div class="px-3 py-1.5 md:px-4 md:py-2 rounded-xl font-black md:text-lg inline-block ${index === 0 ? 'bg-yellow-50 text-yellow-700 border border-yellow-200' : 'bg-green-50 text-green-700 border border-green-100'}">
+                                            ${item.score} <span class="text-[10px] md:text-xs font-bold uppercase opacity-70">pts</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.openRewardForm = () => {
+            const select = document.getElementById('rw-worker');
+            select.innerHTML = '<option value="">Seleccionar...</option>' + 
+                window.appState.workers.filter(w=>w.status==='active').map(w => `<option value="${w.id}">${w.name} (${w.role})</option>`).join('');
+            document.getElementById('rw-reason').value = '';
+            document.getElementById('rw-notes').value = '';
+            window.openModal('modal-reward');
+        };
+
+        window.saveReward = (e) => {
+            e.preventDefault();
+            const rewardData = {
+                id: generateId(),
+                workerId: document.getElementById('rw-worker').value,
+                type: document.getElementById('rw-type').value,
+                reason: document.getElementById('rw-reason').value,
+                notes: document.getElementById('rw-notes').value,
+                date: getTodayStr(),
+                evaluator: window.appState.userProfile.name
+            };
+
+            const rewardsDb = getDb('rewards');
+            rewardsDb.push(rewardData);
+            setDb('rewards', rewardsDb);
+
+            window.closeModal('modal-reward');
+            window.showToast("Reconocimiento otorgado");
+        };
+
+        function buildRewards() {
+            const { workers, rewards, role } = window.appState;
+            const canEdit = ['ADMIN', 'HR'].includes(role);
+            const sorted = [...rewards].sort((a,b)=>new Date(b.date)-new Date(a.date));
+
+            return `
+                <div class="h-full flex flex-col pb-20 md:pb-0 space-y-6">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                            <h1 class="text-2xl font-black text-gray-800">Módulo de Reconocimientos</h1>
+                            <p class="text-gray-500 text-sm">Historial de premios y reconocimientos no monetarios.</p>
+                        </div>
+                        ${canEdit ? `<button onclick="window.openRewardForm()" class="bg-[#7be4af] text-[#0d4e46] py-3 px-6 rounded-2xl font-bold hover:bg-[#66d19c] shadow-lg flex items-center gap-2"><i data-lucide="award" class="w-4 h-4"></i> Otorgar Premio</button>` : ''}
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 overflow-y-auto flex-1 pr-2">
+                        ${sorted.length === 0 ? '<p class="text-gray-500 col-span-full text-center py-10">No hay reconocimientos registrados.</p>' : 
+                        sorted.map(r => {
+                            const worker = workers.find(w=>w.id === r.workerId);
+                            return `
+                                <div class="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm border-t-4 border-t-amber-400 flex flex-col relative overflow-hidden">
+                                    <div class="absolute top-2 right-2 opacity-10 text-amber-500"><i data-lucide="award" class="w-20 h-20"></i></div>
+                                    <div class="flex items-center gap-3 mb-4 relative z-10">
+                                        <img src="${worker?.image || `https://ui-avatars.com/api/?name=${worker?.name || 'U'}`}" class="w-12 h-12 rounded-full border border-gray-200"/>
+                                        <div>
+                                            <p class="font-bold text-gray-800 leading-tight">${worker?.name || 'Desconocido'}</p>
+                                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">${r.date}</p>
+                                        </div>
+                                    </div>
+                                    <div class="relative z-10 flex-1">
+                                        <h4 class="text-lg font-black text-amber-600 mb-1">${r.type}</h4>
+                                        <p class="text-sm font-medium text-gray-700">${r.reason}</p>
+                                        ${r.notes ? `<p class="text-xs text-gray-500 mt-2 p-2 bg-gray-50 rounded-lg italic">"${r.notes}"</p>` : ''}
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-400 font-medium relative z-10">
+                                        Por: ${r.evaluator}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        window.setDevRole = (r) => {
+            window.appState.role = r;
+            window.appState.userProfile.name = `Usuario ${r}`;
+            document.getElementById('user-name').innerText = `Usuario ${r}`;
+            window.navigateTo('dashboard');
+            renderDevRoles();
+        };
+
+        function renderDevRoles() {
+            const container = document.getElementById('roles-container');
+            const r = window.appState.role;
+            container.innerHTML = ['ADMIN', 'HR', 'COORD', 'WORKER'].map(role => `
+                <button onclick="window.setDevRole('${role}')" class="px-3 py-1 rounded-xl transition-colors ${r === role ? 'bg-[#0d4e46] text-[#7be4af]' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}">${role}</button>
+            `).join('');
+        }
+    </script>
 </body>
 </html>
