@@ -2,173 +2,272 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <!-- Bloqueo de zoom para móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
-    <title>HR Events - Portal Administrativo</title>
+    <title>HR Events V2</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Íconos modernos (Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-tap-highlight-color: transparent; }
-        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        .truncate-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; -webkit-font-smoothing: antialiased; }
+        ::selection { background: rgba(123, 228, 175, 0.35); }
+        h1, h2 { letter-spacing: -0.025em; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .animate-in { animation: fadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* ============ Micro-interacciones globales ============ */
+        #login-screen button, #app-layout button, #worker-modal button,
+        #worker-modal label, #main-content label {
+            transition-property: all; transition-duration: 0.3s; transition-timing-function: ease-out;
+        }
+        #login-screen button:active, #app-layout button:active, #worker-modal button:active,
+        #worker-modal label:active, #main-content label:active { transform: scale(0.95); }
+
+        /* ============ Tarjetas clickeables (Dashboard / Directorio / Ranking) ============ */
+        #main-content .card-shadow { transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+        #main-content .card-shadow.cursor-pointer:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 40px -12px rgba(13, 78, 70, 0.15), 0 4px 12px rgb(0, 0, 0, 0.04);
+            border-color: rgba(123, 228, 175, 0.6);
+        }
+        #main-content .card-shadow.cursor-pointer:active { transform: scale(0.97); }
+
+        /* ============ Navegación ============ */
+        #desktop-nav button { transition: all 0.3s ease-out; }
+        #desktop-nav button:hover { transform: translateX(3px); }
+        #desktop-nav button:active { transform: scale(0.97); }
+        #mobile-nav button { transition: all 0.3s ease-out; }
+        #mobile-nav button:active { transform: scale(0.9); }
+        #mobile-nav button > div { transition: all 0.35s cubic-bezier(0.34, 1.4, 0.64, 1); }
+        #mobile-nav button[class*="text-[#0d4e46]"] > div { transform: scale(1.08); }
+        .nav-safe { bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px)); }
+
+        /* ============ Formularios modernos (modal, login y vistas generadas) ============ */
+        #worker-modal input:not([type="hidden"]):not([type="file"]), #worker-modal select,
+        #main-content input, #main-content select { transition: all 0.3s ease-out; }
+        #worker-modal input:not([type="hidden"]):not([type="file"]), #worker-modal select {
+            background-color: rgba(249, 250, 251, 0.55); border-color: transparent;
+        }
+        #worker-modal input:not([type="hidden"]):not([type="file"]):focus, #worker-modal select:focus,
+        #main-content input:focus, #main-content select:focus {
+            background-color: #ffffff; border-color: transparent;
+            box-shadow: 0 0 0 3px rgba(123, 228, 175, 0.45); outline: none;
+        }
+
+        /* ============ Login premium ============ */
+        #login-screen {
+            background:
+                radial-gradient(55rem 32rem at 12% 8%, rgba(123, 228, 175, 0.16), transparent 55%),
+                radial-gradient(45rem 30rem at 92% 95%, rgba(123, 228, 175, 0.10), transparent 55%),
+                #0d4e46;
+        }
+
+        /* ============ Cabecera verde de impacto (Dashboard) ============ */
+        #main-content [class*="bg-[#0f4e45]"]:not(button) {
+            background: linear-gradient(135deg, #0d4e46 0%, #11584e 55%, #146459 100%);
+            box-shadow: 0 14px 34px -14px rgba(13, 78, 70, 0.4);
+        }
+
+        /* ============ Perfil: secciones tipo bento también en móvil ============ */
+        #main-content [class*="md:rounded-3xl"][class*="shadow-sm"] {
+            border-radius: 1.5rem; background: #ffffff;
+            border: 1px solid rgba(243, 244, 246, 0.7);
+            box-shadow: 0 8px 30px rgb(0, 0, 0, 0.04);
+        }
+
+        /* ============ Modal con glassmorphism ============ */
+        .modal-backdrop {
+            position: fixed; inset: 0; background-color: rgba(13, 78, 70, 0.45);
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            z-index: 1000; display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.25s ease; padding: 1rem;
+        }
+        .modal-backdrop.active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            width: 100%; max-width: 36rem; border-radius: 1.75rem; max-height: 90vh;
+            display: flex; flex-direction: column; transform: scale(0.95) translateY(12px);
+            transition: transform 0.35s cubic-bezier(0.22, 1.2, 0.36, 1);
+            overflow: hidden;
+            box-shadow: 0 24px 60px -12px rgba(13, 78, 70, 0.28), 0 8px 24px rgba(0, 0, 0, 0.08);
+        }
+        .modal-backdrop.active .modal-content { transform: scale(1) translateY(0); }
+        #worker-modal .card-shadow { background-color: rgba(255, 255, 255, 0.85); }
+
+        /* ============ Sombras premium multi-capa (todas las tarjetas) ============ */
+        .card-shadow { box-shadow: 0 8px 30px rgb(0, 0, 0, 0.04), 0 1px 2px rgb(0, 0, 0, 0.02); border: 1px solid rgba(243, 244, 246, 0.7); }
     </style>
 </head>
-<body class="bg-[#0d4e46] text-gray-800 h-screen w-full overflow-hidden flex flex-col relative">
+<body class="overflow-hidden">
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden transition-all duration-300">
-        <div id="toast-content" class="bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
-            <i id="toast-icon" class="fas fa-check-circle text-[#7be4af]"></i>
-            <span id="toast-message" class="font-medium text-sm">Mensaje</span>
+    <div id="login-screen" class="fixed inset-0 min-h-[100dvh] bg-[#0d4e46] flex flex-col items-center justify-center p-6 fade-in z-[300]">
+        <div class="w-20 h-20 bg-[#7be4af] rounded-3xl flex items-center justify-center text-[#0d4e46] mb-8 shadow-[0_0_40px_rgba(123,228,175,0.3)] ring-4 ring-[#7be4af]/20">
+           <i data-lucide="briefcase" style="width: 40px; height: 40px;"></i>
         </div>
+        <h1 class="text-4xl font-black text-white mb-2 tracking-tight text-center">HR Events</h1>
+        <p class="text-[#7be4af] font-medium mb-10 text-center max-w-sm">Sistema centralizado de gestión de talento y rendimiento.</p>
+        
+        <form onsubmit="window.handleLogin(event)" class="bg-white rounded-[2rem] p-8 w-full max-w-sm text-center shadow-[0_25px_60px_-15px_rgba(0,0,0,0.4)] border border-white/20">
+          <h2 class="text-2xl font-black text-[#0d4e46] mb-2">Iniciar Sesión</h2>
+          <p class="text-sm text-gray-500 mb-6">Ingresa con tu número de cédula</p>
+          
+          <div class="text-left mb-6">
+              <label class="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wide">Número de Documento</label>
+              <input type="number" id="login-cedula" required placeholder="1007117953" class="w-full border border-transparent bg-gray-50/50 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#7be4af]/50 focus:border-transparent font-medium text-lg transition-all duration-300 ease-out" />
+          </div>
+          
+          <button type="submit" id="login-btn" class="w-full bg-[#7be4af] text-[#0d4e46] py-3.5 rounded-xl font-black hover:bg-[#66d19c] transition-all duration-300 ease-out shadow-lg shadow-[#7be4af]/30 hover:shadow-xl hover:shadow-[#7be4af]/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait">
+              Ingresar al Portal
+          </button>
+        </form>
     </div>
 
-    <!-- PANTALLA DE LOGIN -->
-    <div id="login-view" class="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#0d4e46] p-4">
-        <div class="text-center mb-8">
-            <div class="bg-[#7be4af] text-[#0d4e46] w-20 h-20 rounded-2xl flex items-center justify-center text-4xl mx-auto mb-4 shadow-lg">
-                <i class="fas fa-id-badge"></i>
+    <div id="app-layout" class="hidden flex h-[100dvh] w-full bg-[#0d4e46] overflow-hidden relative">
+        
+        <!-- SIDEBAR (PC) -->
+        <div class="hidden md:flex flex-col w-72 bg-[#0d4e46] text-white pt-8 pb-6 px-6 border-r border-[#146459] relative z-20 shrink-0">
+            <div class="mb-10 flex items-center gap-3">
+                <div class="w-10 h-10 bg-[#7be4af] rounded-xl flex items-center justify-center text-[#0d4e46] shadow-lg shadow-[#7be4af]/25">
+                    <i data-lucide="briefcase" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black tracking-tight leading-tight">HR Events</h2>
+                    <p class="text-[10px] text-[#7be4af] uppercase font-bold tracking-widest">Portal Administrativo</p>
+                </div>
             </div>
-            <h1 class="text-4xl font-bold text-white mb-2">HR Events</h1>
-            <p class="text-[#7be4af]">Sistema centralizado de talento y rendimiento.</p>
-        </div>
-        <div class="glass-card w-full max-w-sm rounded-3xl p-8 shadow-2xl">
-            <h2 class="text-2xl font-bold text-center text-[#0d4e46] mb-6">Iniciar Sesión</h2>
-            <form id="login-form" onsubmit="handleLogin(event)">
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-gray-600 mb-2">Cédula o Documento</label>
-                    <div class="relative">
-                        <i class="fas fa-user absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="number" id="login-doc" required placeholder="1007117953" class="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:border-[#146459] focus:ring-2 focus:ring-[#7be4af] transition-all bg-gray-50">
+
+            <nav id="desktop-nav" class="flex-1 space-y-2">
+                <!-- Nav items inyectados por JS -->
+            </nav>
+
+            <div class="mt-auto bg-white/5 backdrop-blur-sm p-4 rounded-3xl border border-white/10">
+                <div class="flex items-center gap-3 mb-3">
+                    <div id="user-avatar" class="w-10 h-10 bg-white rounded-full flex items-center justify-center text-[#0d4e46] font-bold overflow-hidden ring-2 ring-[#7be4af]/40 shadow-md">U</div>
+                    <div class="flex-1 min-w-0">
+                      <p id="user-name" class="text-sm font-bold truncate">Usuario</p>
+                      <p id="user-role" class="text-[10px] text-[#7be4af] font-black uppercase tracking-wider">Rol</p>
                     </div>
                 </div>
-                <button type="submit" id="login-btn" class="w-full bg-[#7be4af] hover:bg-[#5ac992] text-[#0d4e46] font-bold py-3 rounded-xl transition-all shadow-md">
-                    Ingresar al Sistema
+                <button onclick="window.appSignOut()" class="w-full flex items-center justify-center gap-2 text-xs font-bold text-gray-300 hover:text-white bg-white/10 hover:bg-white/20 py-2 rounded-xl transition-all duration-300 ease-out active:scale-95">
+                    <i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión
                 </button>
-            </form>
+            </div>
         </div>
-    </div>
 
-    <!-- APLICACIÓN PRINCIPAL -->
-    <div id="app-view" class="hidden h-full w-full flex flex-col md:flex-row bg-gray-50">
-        
-        <!-- NAVEGACIÓN -->
-        <nav class="bg-[#146459] text-white w-full md:w-64 md:flex-shrink-0 flex md:flex-col justify-around md:justify-start p-2 md:p-6 shadow-xl z-20 order-2 md:order-1 fixed bottom-0 md:relative h-16 md:h-full">
-            <div class="hidden md:block mb-10 text-center">
-                <h2 class="text-2xl font-bold text-[#7be4af]">HR Events</h2>
-                <p class="text-xs opacity-75 mt-1" id="user-role-display">Administrador</p>
-            </div>
+        <!-- MAIN CONTENT AREA -->
+        <div class="flex-1 flex flex-col h-[100dvh] bg-[#f8fafc] md:rounded-l-[2.5rem] overflow-hidden relative shadow-2xl md:border-l md:border-white/10">
             
-            <div class="flex md:flex-col w-full md:w-auto justify-around md:justify-start gap-1 md:gap-4 overflow-x-auto hide-scroll" id="nav-links">
-                <!-- Inyectados por JS -->
+            <div id="main-content" class="flex-1 overflow-y-auto p-6 md:p-8 relative pb-32 md:pb-10 hide-scrollbar">
+                <!-- Vistas dinámicas inyectadas aquí -->
             </div>
 
-            <div class="hidden md:block mt-auto">
-                <button onclick="logout()" class="w-full bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
-                </button>
+            <!-- BOTTOM NAV (Móvil) -->
+            <div class="md:hidden fixed nav-safe left-4 right-4 bg-white/75 backdrop-blur-xl border border-white/60 px-2 py-2 rounded-[2rem] shadow-[0_12px_40px_-8px_rgba(13,78,70,0.18),0_4px_12px_rgba(13,78,70,0.06)] z-[200]">
+                <div id="mobile-nav" class="flex justify-around items-center max-w-sm mx-auto">
+                    <!-- Nav items inyectados por JS -->
+                </div>
             </div>
-        </nav>
-
-        <!-- CONTENIDO -->
-        <main class="flex-1 overflow-y-auto order-1 md:order-2 pb-20 md:pb-0 relative" id="main-content">
-            <!-- Vistas JS -->
-        </main>
+        </div>
     </div>
 
     <!-- MODAL FORMULARIO TRABAJADOR -->
-    <div id="worker-modal" class="fixed inset-0 bg-black/60 z-50 hidden flex-col justify-end md:justify-center items-center">
-        <div class="bg-white w-full md:w-2/3 max-w-2xl rounded-t-3xl md:rounded-3xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-[#0d4e46] text-white md:rounded-t-3xl rounded-t-3xl">
-                <h3 id="worker-modal-title" class="text-xl font-bold">Nuevo Trabajador</h3>
-                <button onclick="closeWorkerModal()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
+    <div id="worker-modal" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="flex justify-between items-center p-6 border-b border-gray-100/80 shrink-0 bg-white/70 backdrop-blur-xl">
+                <h3 id="worker-modal-title" class="font-black text-xl text-[#0d4e46]">Nuevo Trabajador</h3>
+                <button onclick="document.getElementById('worker-modal').classList.remove('active')" class="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-all duration-300 ease-out hover:rotate-90 active:scale-90">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
             </div>
-            <div class="p-6 overflow-y-auto flex-1">
-                <form id="worker-form" class="space-y-6">
+            <div class="p-6 overflow-y-auto flex-1 hide-scrollbar bg-gray-50/60">
+                <form id="worker-form" onsubmit="window.saveWorker(event)" class="space-y-6">
                     <input type="hidden" id="w-id">
                     
+                    <!-- FOTO -->
                     <div class="flex flex-col items-center mb-6">
-                        <div class="relative w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden mb-2">
+                        <div class="relative w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-md flex items-center justify-center overflow-hidden mb-3">
                             <img id="w-photo-preview" src="" class="w-full h-full object-cover hidden">
-                            <i id="w-photo-icon" class="fas fa-camera text-gray-400 text-2xl"></i>
+                            <i id="w-photo-icon" data-lucide="camera" class="w-8 h-8 text-gray-400"></i>
                         </div>
-                        <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 text-[#0d4e46] text-xs font-bold py-1 px-3 rounded-full transition-all">
-                            Subir Foto
-                            <input type="file" id="w-photo-input" accept="image/jpeg, image/png" class="hidden" onchange="handlePhotoUpload(event)">
+                        <label class="cursor-pointer text-[#0d4e46] text-xs font-bold py-2 px-4 rounded-full bg-white shadow-sm border border-gray-200 hover:bg-gray-50 hover:shadow-md transition-all duration-300 ease-out active:scale-95">
+                            Subir Fotografía
+                            <input type="file" accept="image/jpeg, image/png" class="hidden" onchange="window.handlePhotoUpload(event)">
                         </label>
                         <input type="hidden" id="w-photo-base64">
                     </div>
 
-                    <div>
-                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Personal</h4>
+                    <div class="bg-white p-5 rounded-2xl card-shadow">
+                        <h4 class="font-bold text-[#0d4e46] mb-4 text-sm uppercase tracking-wide">Datos Personales</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="text-xs text-gray-500 font-bold">Nombre Completo</label><input type="text" id="w-name" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
-                            <div><label class="text-xs text-gray-500 font-bold">Documento</label><input type="number" id="w-doc" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
-                            <div><label class="text-xs text-gray-500 font-bold">Teléfono/WhatsApp</label><input type="number" id="w-phone" required class="w-full p-2 border rounded-lg bg-gray-50"></div>
-                            <div><label class="text-xs text-gray-500 font-bold">Ciudad</label><input type="text" id="w-city" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div class="md:col-span-2"><input required id="w-name" placeholder="Nombre Completo" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
+                            <div><input type="number" required id="w-doc" placeholder="Número de Documento" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
+                            <div><input type="number" required id="w-phone" placeholder="Teléfono / WhatsApp" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
+                            <div class="md:col-span-2"><input id="w-city" placeholder="Ciudad de Residencia" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
                         </div>
                     </div>
 
-                    <div>
-                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Laboral</h4>
+                    <div class="bg-white p-5 rounded-2xl card-shadow">
+                        <h4 class="font-bold text-[#0d4e46] mb-4 text-sm uppercase tracking-wide">Información Laboral</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="text-xs text-gray-500 font-bold">Rol/Cargo</label>
-                                <select id="w-role" class="w-full p-2 border rounded-lg bg-gray-50">
-                                    <option value="WORKER">Trabajador</option>
-                                    <option value="COORD">Coordinador</option>
-                                    <option value="HR">Recursos Humanos</option>
-                                    <option value="ADMIN">Administrador</option>
+                                <select id="w-role" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm font-bold text-[#0d4e46] focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors">
+                                    <option value="Animador">Animador (Trabajador)</option>
+                                    <option value="DJ">DJ (Trabajador)</option>
+                                    <option value="Coordinador">Coordinador</option>
+                                    <option value="Recursos Humanos">Recursos Humanos</option>
+                                    <option value="Administrador">Administrador</option>
                                 </select>
                             </div>
                             <div>
-                                <label class="text-xs text-gray-500 font-bold">Estado</label>
-                                <select id="w-status" class="w-full p-2 border rounded-lg bg-gray-50">
+                                <select id="w-status" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm font-bold text-gray-600 focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors">
                                     <option value="activo">Activo</option>
                                     <option value="inactivo">Inactivo</option>
                                 </select>
                             </div>
                             <div class="md:col-span-2">
-                                <label class="text-xs text-gray-500 font-bold">Disponibilidad Semanal (Días y Horarios)</label>
-                                <input type="text" id="w-availability" placeholder="Ej: Lunes a Viernes (Tardes), Sábados todo el día" class="w-full p-2 border rounded-lg bg-gray-50">
+                                <input id="w-specs" placeholder="Especialidades (Ej: Recreación, Logística, Montaje)" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors">
                             </div>
                             <div class="md:col-span-2">
-                                <label class="text-xs text-gray-500 font-bold">Especialidades (Ej: Animador, DJ)</label>
-                                <input type="text" id="w-specs" placeholder="Separadas por coma" class="w-full p-2 border rounded-lg bg-gray-50">
+                                <input id="w-availability" placeholder="Disponibilidad (Ej: Lunes a Viernes tardes, Fines de semana completos)" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors">
                             </div>
                         </div>
                     </div>
 
-                    <div id="bank-section-form" class="hidden">
-                        <h4 class="font-bold text-[#146459] border-b pb-2 mb-4">Información Bancaria</h4>
+                    <div id="bank-section-form" class="bg-white p-5 rounded-2xl card-shadow" style="display:none;">
+                        <h4 class="font-bold text-gray-500 mb-4 text-sm uppercase tracking-wide flex items-center gap-2"><i data-lucide="shield" class="w-4 h-4"></i> Info. Bancaria Privada</h4>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div><label class="text-xs text-gray-500 font-bold">Banco</label><input type="text" id="w-bank-name" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div><input id="w-bank-name" placeholder="Banco" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
                             <div>
-                                <label class="text-xs text-gray-500 font-bold">Tipo de Cuenta</label>
-                                <select id="w-bank-type" class="w-full p-2 border rounded-lg bg-gray-50">
-                                    <option value="Ahorros">Ahorros</option>
-                                    <option value="Corriente">Corriente</option>
-                                    <option value="Nequi/Daviplata">Nequi / Daviplata</option>
+                                <select id="w-bank-type" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors">
+                                    <option value="Ahorros">Ahorros</option><option value="Corriente">Corriente</option><option value="Nequi/Daviplata">Nequi/Daviplata</option>
                                 </select>
                             </div>
-                            <div><label class="text-xs text-gray-500 font-bold">Número de Cuenta</label><input type="number" id="w-bank-num" class="w-full p-2 border rounded-lg bg-gray-50"></div>
-                            <div><label class="text-xs text-gray-500 font-bold">Titular</label><input type="text" id="w-bank-owner" class="w-full p-2 border rounded-lg bg-gray-50"></div>
+                            <div class="md:col-span-2"><input type="number" id="w-bank-num" placeholder="Número de Cuenta" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
+                            <div class="md:col-span-2"><input id="w-bank-owner" placeholder="Titular de la cuenta" class="w-full border border-gray-200 bg-gray-50 rounded-xl p-3 text-sm focus:bg-white focus:border-[#7ce3af] focus:outline-none transition-colors"></div>
                         </div>
                     </div>
+
+                    <div class="pt-2 pb-4">
+                        <button type="submit" id="save-worker-btn" class="w-full bg-[#7be4af] text-[#0d4e46] py-4 rounded-xl font-black hover:bg-[#66d19c] transition-all duration-300 ease-out shadow-lg shadow-[#7be4af]/25 hover:shadow-xl hover:shadow-[#7be4af]/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] disabled:opacity-70">Guardar Trabajador</button>
+                    </div>
                 </form>
-            </div>
-            <div class="p-4 border-t bg-gray-50 rounded-b-3xl flex justify-end gap-3">
-                <button onclick="closeWorkerModal()" class="px-5 py-2 rounded-xl font-bold text-gray-500 hover:bg-gray-200 transition-all">Cancelar</button>
-                <button onclick="saveWorker()" id="save-worker-btn" class="px-5 py-2 rounded-xl font-bold bg-[#7be4af] text-[#0d4e46] hover:bg-[#5ac992] shadow-md transition-all">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- FIREBASE & CORE JAVASCRIPT -->
+    <!-- Contenedor para Notificaciones Tipo Toast -->
+    <div id="toast-container" class="fixed bottom-24 md:bottom-10 left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-2 pointer-events-none w-11/12 max-w-sm items-center"></div>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
         import { getFirestore, collection, getDocs, setDoc, doc, query, where, addDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyB4N-DtD-dPaF4r2TIU2Vsk8nlEHtEnAss",
@@ -181,575 +280,633 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app);
 
-        // ESTADO GLOBAL
         window.appState = {
             currentUser: null,
             currentView: 'dashboard',
             selectedWorker: null,
+            selectedMonth: new Date().toISOString().slice(0, 7),
             dbWorkers: [],
-            currentProfilePoints: [],
-            currentProfileDocs: []
+            points: [],
+            currentProfileDocs: [],
+            activeProfileTab: 'rendimiento'
+        };
+
+        window.getInitials = (name) => {
+            const parts = name.trim().split(' ');
+            if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+            if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+            return 'US';
+        };
+
+        window.showToast = (message, type = 'success') => {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `px-5 py-3 rounded-2xl text-sm font-bold shadow-xl transition-all duration-300 transform translate-y-4 opacity-0 flex items-center gap-3 w-full max-w-sm ${
+                type === 'error' ? 'bg-red-500 text-white' : 'bg-gray-800 text-white'
+            }`;
+            const iconColor = type === 'error' ? 'text-white' : 'text-[#7be4af]';
+            toast.innerHTML = `<i data-lucide="${type === 'error' ? 'alert-circle' : 'check-circle'}" class="w-5 h-5 ${iconColor} shrink-0"></i> <span class="flex-1 min-w-0 truncate break-words whitespace-normal">${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            requestAnimationFrame(() => toast.classList.remove('translate-y-4', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         };
 
         window.onload = async () => {
-            await checkSession();
+            lucide.createIcons();
+            try {
+                await signInAnonymously(auth);
+                await checkSession();
+            } catch (error) {
+                window.showToast("Error de conexión a Firebase", "error");
+            }
         };
 
-        async function fetchAllWorkers() {
+        async function fetchAllData() {
             try {
-                const querySnapshot = await getDocs(collection(db, "workers"));
-                window.appState.dbWorkers = querySnapshot.docs.map(doc => doc.data());
-            } catch (error) {
-                console.error(error);
-            }
+                const wSnap = await getDocs(collection(db, "workers"));
+                window.appState.dbWorkers = wSnap.docs.map(doc => doc.data());
+                
+                const pSnap = await getDocs(collection(db, "points"));
+                window.appState.points = pSnap.docs.map(doc => ({dbId: doc.id, ...doc.data()}));
+            } catch (e) { console.error(e); }
         }
 
         async function checkSession() {
-            try {
-                const session = sessionStorage.getItem('hr_v2_session');
-                if (session) {
-                    window.appState.currentUser = JSON.parse(session);
-                    await fetchAllWorkers(); 
-                    window.showApp();
-                }
-            } catch(e) {}
+            const session = sessionStorage.getItem('hr_v2_session');
+            if (session) {
+                window.appState.currentUser = JSON.parse(session);
+                await fetchAllData(); 
+                performLoginUI();
+            }
         }
 
-        // LOGIN Y FAILSAFE
         window.handleLogin = async (e) => {
             e.preventDefault();
-            const docInput = document.getElementById('login-doc').value.trim();
+            const docInput = document.getElementById('login-cedula').value.trim();
             const btn = document.getElementById('login-btn');
             
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Conectando...';
+            btn.innerHTML = '<i data-lucide="loader-2" class="w-5 h-5 animate-spin mx-auto"></i>';
+            lucide.createIcons();
             btn.disabled = true;
 
             try {
+                // FAILSAFE
                 if (docInput === '1007117953') {
-                    const adminData = { id: 'admin_1007117953', document: '1007117953', name: 'Administrador Principal', role: 'ADMIN', status: 'activo', phone: '3000000000', photo: '', availabilityText: 'Siempre disponible' };
+                    const adminData = { id: 'admin_1007117953', document: '1007117953', name: 'Admin Principal', role: 'Administrador', systemRole: 'ADMIN', status: 'activo' };
                     await setDoc(doc(db, "workers", "admin_1007117953"), adminData, { merge: true });
-                    
                     window.appState.currentUser = adminData;
                     sessionStorage.setItem('hr_v2_session', JSON.stringify(adminData));
-                    await fetchAllWorkers();
-                    window.showApp();
-                    return; 
+                    await fetchAllData(); performLoginUI(); return; 
                 }
 
                 const q = query(collection(db, "workers"), where("document", "==", docInput), where("status", "==", "activo"));
                 const querySnapshot = await getDocs(q);
                 
                 if (!querySnapshot.empty) {
-                    window.appState.currentUser = querySnapshot.docs[0].data();
-                    sessionStorage.setItem('hr_v2_session', JSON.stringify(window.appState.currentUser));
-                    await fetchAllWorkers();
-                    window.showApp();
+                    const user = querySnapshot.docs[0].data();
+                    // Normalizar roles para compatibilidad
+                    if(!user.systemRole) {
+                        if(user.role === 'Administrador') user.systemRole = 'ADMIN';
+                        else if(user.role === 'Recursos Humanos') user.systemRole = 'HR';
+                        else if(user.role === 'Coordinador') user.systemRole = 'COORD';
+                        else user.systemRole = 'WORKER';
+                    }
+                    window.appState.currentUser = user;
+                    sessionStorage.setItem('hr_v2_session', JSON.stringify(user));
+                    await fetchAllData(); performLoginUI();
                 } else {
-                    window.showToast('Cédula no encontrada', 'error');
+                    window.showToast('Cédula no encontrada o inactiva', 'error');
                 }
-            } catch (error) {
-                window.showToast('Error de conexión', 'error');
-            } finally {
-                btn.innerHTML = 'Ingresar al Sistema';
-                btn.disabled = false;
-            }
+            } catch (error) { window.showToast('Error de conexión', 'error'); } 
+            finally { btn.innerHTML = 'Ingresar al Portal'; btn.disabled = false; }
         };
 
-        window.logout = () => {
-            sessionStorage.removeItem('hr_v2_session');
-            window.appState.currentUser = null;
-            document.getElementById('app-view').classList.add('hidden');
-            document.getElementById('login-view').classList.remove('hidden');
-            document.getElementById('login-doc').value = '';
-        };
-
-        // NAVEGACIÓN
-        window.showApp = () => {
-            document.getElementById('login-view').classList.add('hidden');
-            document.getElementById('app-view').classList.remove('hidden');
+        function performLoginUI() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-layout').classList.remove('hidden');
             
-            const roleNames = { 'ADMIN': 'Administrador', 'HR': 'Recursos Humanos', 'COORD': 'Coordinador', 'WORKER': 'Trabajador' };
-            document.getElementById('user-role-display').innerText = `${window.appState.currentUser.name} (${roleNames[window.appState.currentUser.role]})`;
+            const user = window.appState.currentUser;
+            document.getElementById('user-name').innerText = user.name;
+            const photoEl = document.getElementById('user-avatar');
+            if(user.photo) {
+                photoEl.innerHTML = `<img src="${user.photo}" class="w-full h-full object-cover">`;
+            } else {
+                photoEl.innerText = window.getInitials(user.name);
+            }
+            document.getElementById('user-role').innerText = user.role;
 
             window.renderNav();
             
-            if (window.appState.currentUser.role === 'WORKER') {
-                window.appState.selectedWorker = window.appState.currentUser;
+            if (user.systemRole === 'WORKER') {
+                window.appState.selectedWorker = user;
                 window.setView('profile');
             } else {
                 window.setView('dashboard');
             }
+        }
+
+        window.appSignOut = () => {
+            sessionStorage.removeItem('hr_v2_session');
+            window.appState.currentUser = null;
+            document.getElementById('app-layout').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-cedula').value = '';
         };
 
         window.setView = async (viewName) => {
-            if (window.appState.currentUser.role === 'WORKER' && viewName !== 'profile') return;
+            if (window.appState.currentUser.systemRole === 'WORKER' && viewName !== 'profile') return;
             window.appState.currentView = viewName;
             window.renderNav();
             
             const main = document.getElementById('main-content');
-            
             if (viewName === 'dashboard') main.innerHTML = window.renderDashboard();
             if (viewName === 'directory') main.innerHTML = window.renderDirectory();
+            if (viewName === 'ranking') main.innerHTML = window.renderRanking();
             if (viewName === 'profile') {
-                main.innerHTML = '<div class="flex items-center justify-center h-full"><i class="fas fa-spinner fa-spin text-4xl text-[#7be4af]"></i></div>';
-                await window.loadProfileData(); // Carga Puntos y Documentos de Firebase
+                main.innerHTML = '<div class="flex justify-center items-center h-full pt-20"><i data-lucide="loader-2" class="w-10 h-10 animate-spin text-[#7ce3af]"></i></div>';
+                lucide.createIcons();
+                
+                const qDocs = query(collection(db, "documents"), where("workerId", "==", window.appState.selectedWorker.id));
+                const snapDocs = await getDocs(qDocs);
+                window.appState.currentProfileDocs = snapDocs.docs.map(doc => ({dbId: doc.id, ...doc.data()})).sort((a,b) => b.timestamp - a.timestamp);
+                
+                window.appState.activeProfileTab = 'rendimiento';
                 main.innerHTML = window.renderProfile();
-                window.switchTab('rendimiento'); // Pestaña principal al abrir
             }
+            lucide.createIcons();
         };
 
         window.renderNav = () => {
-            const role = window.appState.currentUser.role;
-            const isWorker = role === 'WORKER';
-            let html = '';
-            const linkClass = (isActive) => `flex md:w-full items-center justify-center md:justify-start gap-2 p-3 md:py-3 md:px-4 rounded-xl transition-all cursor-pointer font-medium text-sm md:text-base ${isActive ? 'bg-[#7be4af] text-[#0d4e46] shadow-md' : 'text-white/70 hover:bg-white/10 hover:text-white'}`;
+            const role = window.appState.currentUser.systemRole;
+            const desktopNav = document.getElementById('desktop-nav');
+            const mobileNav = document.getElementById('mobile-nav');
 
-            if (!isWorker) {
-                html += `<div onclick="setView('dashboard')" class="${linkClass(window.appState.currentView === 'dashboard')}"><i class="fas fa-home"></i><span class="hidden md:inline">Inicio</span></div>`;
-                html += `<div onclick="setView('directory')" class="${linkClass(window.appState.currentView === 'directory')}"><i class="fas fa-users"></i><span class="hidden md:inline">Equipo</span></div>`;
-            } else {
-                html += `<div class="${linkClass(true)}"><i class="fas fa-user"></i><span class="hidden md:inline">Mi Perfil</span></div>`;
-            }
+            const navItems = [
+                { id: 'dashboard', icon: 'layout-dashboard', label: 'Inicio', roles: ['ADMIN', 'HR', 'COORD'] },
+                { id: 'directory', icon: 'users', label: 'Directorio', roles: ['ADMIN', 'HR', 'COORD'] },
+                { id: 'ranking', icon: 'star', label: 'Ranking', roles: ['ADMIN', 'HR', 'COORD'] },
+                { id: 'profile', icon: 'user', label: 'Mi Perfil', roles: ['WORKER'] }
+            ];
 
-            if (isWorker) {
-                html += `<div onclick="logout()" class="flex md:hidden items-center justify-center gap-2 p-3 rounded-xl transition-all cursor-pointer font-medium text-sm text-red-300 hover:bg-white/10"><i class="fas fa-sign-out-alt"></i></div>`;
-            }
-            document.getElementById('nav-links').innerHTML = html;
+            const allowedItems = navItems.filter(item => item.roles.includes(role));
+
+            // Desktop
+            desktopNav.innerHTML = allowedItems.map(item => `
+                <button onclick="window.setView('${item.id}')"
+                    class="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl font-bold transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af] text-[#0d4e46] shadow-lg shadow-[#7be4af]/20' : 'text-gray-300 hover:bg-[#146459] hover:text-white'}">
+                    <i data-lucide="${item.icon}" class="w-5 h-5 shrink-0"></i> <span class="truncate">${item.label}</span>
+                </button>
+            `).join('');
+
+            // Mobile (Con botón de salir)
+            let mobileHtml = allowedItems.map(item => `
+                <button onclick="window.setView('${item.id}')" 
+                    class="flex flex-col items-center gap-1 transition-colors ${window.appState.currentView === item.id ? 'text-[#0d4e46]' : 'text-gray-400'}">
+                    <div class="p-2 rounded-2xl transition-all ${window.appState.currentView === item.id ? 'bg-[#7be4af]/20' : ''}">
+                        <i data-lucide="${item.icon}" class="w-5 h-5 shrink-0"></i>
+                    </div>
+                    <span class="text-[10px] font-bold">${item.label}</span>
+                </button>
+            `).join('');
+
+            mobileHtml += `
+                <button onclick="window.appSignOut()" class="flex flex-col items-center gap-1 transition-colors text-red-400">
+                    <div class="p-2 rounded-2xl transition-all"><i data-lucide="log-out" class="w-5 h-5 shrink-0"></i></div>
+                    <span class="text-[10px] font-bold">Salir</span>
+                </button>
+            `;
+            mobileNav.innerHTML = mobileHtml;
+            lucide.createIcons();
         };
 
-        // VISTAS SIMPLES
         window.renderDashboard = () => {
             const activeWorkers = window.appState.dbWorkers.filter(w => w.status === 'activo').length;
+            const firstName = window.appState.currentUser.name.split(' ')[0];
+            
+            const monthStr = window.appState.selectedMonth;
+            const monthPoints = window.appState.points.filter(p => {
+                const d = new Date(p.timestamp);
+                return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === monthStr;
+            });
+            let totalMonthPts = 0; monthPoints.forEach(p => totalMonthPts += (p.type === 'pos' ? p.amount : -p.amount));
+            const avgPoints = activeWorkers > 0 ? Math.round(totalMonthPts / activeWorkers) : 0;
+
             return `
-            <div class="p-6 md:p-10 max-w-6xl mx-auto">
-                <h2 class="text-3xl font-bold text-[#0d4e46] mb-8">Panel Principal</h2>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-                    <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex items-center gap-4 border-l-4 border-l-[#7be4af]">
-                        <div class="w-14 h-14 rounded-2xl bg-[#7be4af]/20 text-[#146459] flex items-center justify-center text-2xl"><i class="fas fa-users"></i></div>
-                        <div><p class="text-sm text-gray-500 font-bold">Activos</p><p class="text-3xl font-black text-[#0d4e46]">${activeWorkers}</p></div>
+            <div class="animate-in fade-in space-y-6">
+                <div class="bg-[#0f4e45] -mx-6 md:-mx-8 -mt-6 md:-mt-8 pt-12 pb-10 px-6 md:px-10 rounded-b-[2rem] shadow-sm">
+                    <div class="max-w-5xl mx-auto">
+                        <h1 class="text-4xl font-bold text-white tracking-tight mb-1 truncate">Hola, ${firstName}</h1>
+                        <p class="text-[#7ce3af] text-sm font-medium mb-8">Resumen del mes actual</p>
+                        <div class="flex gap-12">
+                            <div>
+                                <div class="text-4xl font-black text-[#7ce3af] mb-1">${activeWorkers}</div>
+                                <div class="text-[10px] uppercase text-white font-bold tracking-wider opacity-80 leading-tight">ACTIVOS<br>TOTAL</div>
+                            </div>
+                            <div>
+                                <div class="text-4xl font-black text-[#7ce3af] mb-1">${avgPoints}</div>
+                                <div class="text-[10px] uppercase text-white font-bold tracking-wider opacity-80 leading-tight">PROM.<br>PUNTOS</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="max-w-5xl mx-auto">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div onclick="setView('directory')" class="bg-white p-5 rounded-[1.5rem] card-shadow flex items-center gap-4 cursor-pointer hover:border-[#7ce3af] transition-colors">
+                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0"><i data-lucide="users" class="w-6 h-6"></i></div>
+                            <div class="flex-1 min-w-0"><h3 class="font-bold text-gray-800 text-lg truncate">Directorio</h3><p class="text-sm text-gray-400 truncate">Gestión de personal</p></div>
+                        </div>
+                        <div onclick="setView('ranking')" class="bg-white p-5 rounded-[1.5rem] card-shadow flex items-center gap-4 cursor-pointer hover:border-[#7ce3af] transition-colors">
+                            <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-500 flex items-center justify-center shrink-0"><i data-lucide="star" class="w-6 h-6"></i></div>
+                            <div class="flex-1 min-w-0"><h3 class="font-bold text-gray-800 text-lg truncate">Rendimiento</h3><p class="text-sm text-gray-400 truncate">Ranking mensual</p></div>
+                        </div>
                     </div>
                 </div>
             </div>`;
         };
 
         window.renderDirectory = () => {
+            const canEdit = ['ADMIN', 'HR'].includes(window.appState.currentUser.systemRole);
+            
             let html = `
-            <div class="p-6 md:p-10 max-w-6xl mx-auto h-full flex flex-col">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                    <h2 class="text-3xl font-bold text-[#0d4e46]">Directorio del Equipo</h2>
-                    <button onclick="openWorkerForm()" class="bg-[#7be4af] text-[#0d4e46] px-5 py-2.5 rounded-xl font-bold hover:bg-[#5ac992] shadow-md flex items-center gap-2">
-                        <i class="fas fa-plus"></i> Nuevo
-                    </button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            `;
-            window.appState.dbWorkers.forEach(w => {
-                const photo = w.photo ? `<img src="${w.photo}" class="w-16 h-16 rounded-2xl object-cover shadow-sm">` : `<div class="w-16 h-16 rounded-2xl bg-[#0d4e46] text-white flex items-center justify-center text-2xl shadow-sm"><i class="fas fa-user"></i></div>`;
-                const isInactive = w.status === 'inactivo';
-                html += `
-                <div onclick="viewWorkerProfile('${w.id}')" class="bg-white p-5 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md cursor-pointer flex items-center gap-4 ${isInactive ? 'opacity-60' : ''}">
-                    ${photo}
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-bold text-gray-800 text-lg truncate-text">${w.name}</h4>
-                        <p class="text-sm text-[#146459] font-medium">${w.role} ${isInactive ? '(Inactivo)' : ''}</p>
+            <div class="animate-in fade-in h-full flex flex-col max-w-7xl mx-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="flex-1 min-w-0 pr-4">
+                        <h1 class="text-3xl font-black text-gray-800 truncate">Directorio</h1>
+                        <p class="text-gray-500 text-sm truncate">Personal de la empresa.</p>
                     </div>
-                    <i class="fas fa-chevron-right text-gray-300"></i>
+                    ${canEdit ? `<button onclick="openWorkerForm()" class="shrink-0 bg-[#7ce3af] text-[#0f4e45] px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-sm hover:bg-[#66d19c] transition-colors text-sm"><i data-lucide="user-plus" class="w-4 h-4"></i> <span class="hidden md:inline">Nuevo</span></button>` : ''}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 pb-4">
+            `;
+
+            window.appState.dbWorkers.forEach(w => {
+                let specsHtml = '';
+                if(w.specialties) {
+                    const tags = w.specialties.split(',').map(s => s.trim()).filter(s => s);
+                    specsHtml = `<div class="flex flex-wrap gap-1 mt-2">` + tags.slice(0,2).map(t => `<span class="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wide truncate max-w-full">${t}</span>`).join('') + (tags.length>2?`<span class="bg-gray-100 text-gray-500 text-[9px] font-bold px-2 py-1 rounded-md uppercase tracking-wide shrink-0">+${tags.length-2}</span>`:'') + `</div>`;
+                }
+                const photoHtml = w.photo ? `<img src="${w.photo}" class="w-14 h-14 rounded-2xl object-cover shrink-0">` : `<div class="w-14 h-14 rounded-2xl bg-gray-100 text-gray-400 font-bold text-xl flex items-center justify-center shrink-0">${window.getInitials(w.name)}</div>`;
+                const isInactive = w.status === 'inactivo';
+
+                html += `
+                <div onclick="viewWorkerProfile('${w.id}')" class="bg-white p-4 rounded-[1.5rem] card-shadow flex items-start gap-4 cursor-pointer hover:border-[#7ce3af] transition-colors relative ${isInactive?'opacity-60':''}">
+                    ${isInactive ? `<span class="absolute top-4 right-4 text-[10px] font-bold text-red-400">Inactivo</span>` : `<span class="absolute top-4 right-4 text-[10px] font-bold text-[#34d399]">Activo</span>`}
+                    ${photoHtml}
+                    <div class="flex-1 min-w-0 pr-8">
+                        <h4 class="font-bold text-gray-900 text-[16px] leading-tight truncate">${w.name}</h4>
+                        <p class="text-[13px] text-[#0f4e45] font-medium truncate">${w.role}</p>
+                        ${specsHtml}
+                    </div>
                 </div>`;
             });
             html += `</div></div>`;
             return html;
         };
 
-        // EL PERFIL: PUNTOS Y DOCUMENTOS
-        window.viewWorkerProfile = (id) => {
-            window.appState.selectedWorker = window.appState.dbWorkers.find(w => w.id === id);
-            window.setView('profile');
+        window.changeMonth = (e) => { window.appState.selectedMonth = e.target.value; window.setView('ranking'); };
+        
+        window.renderRanking = () => {
+            const monthStr = window.appState.selectedMonth; 
+            const monthPoints = window.appState.points.filter(p => { 
+                const d = new Date(p.timestamp); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}` === monthStr; 
+            });
+            
+            const scores = {}; 
+            window.appState.dbWorkers.forEach(w => scores[w.id] = 0); 
+            monthPoints.forEach(p => scores[p.workerId] += (p.type === 'pos' ? p.amount : -p.amount));
+            
+            const rankedWorkers = window.appState.dbWorkers.filter(w => w.status === 'activo').map(w => ({ ...w, totalPts: scores[w.id] })).sort((a, b) => b.totalPts - a.totalPts);
+
+            let html = `
+            <div class="animate-in fade-in max-w-7xl mx-auto">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-3xl font-black text-gray-800 truncate">Ranking Mensual</h1>
+                        <p class="text-gray-500 text-sm truncate">Rendimiento basado en evaluaciones.</p>
+                    </div>
+                    <input type="month" value="${monthStr}" onchange="changeMonth(event)" class="border border-gray-200 bg-white text-[#0f4e45] font-bold px-4 py-2.5 rounded-xl shadow-sm text-sm cursor-pointer hover:bg-gray-50 focus:outline-none shrink-0 w-full md:w-auto">
+                </div>
+                
+                <div class="space-y-3 pb-4">`;
+
+            if(rankedWorkers.length === 0) html += '<p class="text-gray-400 text-center py-10">No hay trabajadores activos</p>';
+
+            rankedWorkers.forEach((w, index) => {
+                const pos = index + 1;
+                let cardClass = "bg-white border-gray-50"; let numClass = "bg-gray-100 text-gray-500"; let ptsClass = "bg-[#f0fdf4] text-[#15803d]";
+                if(pos === 1) { cardClass = "bg-white border-[#f59e0b] shadow-md"; numClass = "bg-[#facc15] text-white"; ptsClass = "bg-[#fef3c7] text-[#b45309]"; } 
+                else if(pos === 2) { numClass = "bg-gray-200 text-gray-600"; } else if(pos === 3) { numClass = "bg-[#d97706] text-white"; }
+
+                html += `
+                <div onclick="viewWorkerProfile('${w.id}')" class="p-4 rounded-[1.5rem] card-shadow border ${cardClass} flex items-center justify-between cursor-pointer hover:scale-[1.01] transition-transform gap-3">
+                    <div class="flex items-center gap-3 flex-1 min-w-0">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-black text-lg shrink-0 ${numClass}">${pos}</div>
+                        <div class="flex-1 min-w-0"><h4 class="font-bold text-gray-900 text-[16px] leading-tight truncate">${w.name}</h4><p class="text-[13px] text-gray-400 truncate">${w.role}</p></div>
+                    </div>
+                    <div class="px-3 py-1.5 rounded-xl font-black ${ptsClass} text-sm flex items-baseline gap-1 shrink-0">${w.totalPts} <span class="text-[10px] font-bold opacity-70">PTS</span></div>
+                </div>`;
+            });
+            html += `</div></div>`;
+            return html;
         };
 
-        window.loadProfileData = async () => {
-            const wId = window.appState.selectedWorker.id;
-            try {
-                // Fetch Puntos
-                const qPoints = query(collection(db, "points"), where("workerId", "==", wId));
-                const snapPoints = await getDocs(qPoints);
-                window.appState.currentProfilePoints = snapPoints.docs.map(doc => ({dbId: doc.id, ...doc.data()})).sort((a,b) => b.timestamp - a.timestamp);
-                
-                // Fetch Docs
-                const qDocs = query(collection(db, "documents"), where("workerId", "==", wId));
-                const snapDocs = await getDocs(qDocs);
-                window.appState.currentProfileDocs = snapDocs.docs.map(doc => ({dbId: doc.id, ...doc.data()})).sort((a,b) => b.timestamp - a.timestamp);
-            } catch (e) {
-                console.error(e);
-            }
-        };
+        window.viewWorkerProfile = (id) => { window.appState.selectedWorker = window.appState.dbWorkers.find(w => w.id === id); window.setView('profile'); };
 
         window.renderProfile = () => {
             const w = window.appState.selectedWorker;
-            const role = window.appState.currentUser.role;
-            const photo = w.photo ? `<img src="${w.photo}" class="w-24 h-24 rounded-3xl object-cover border-4 border-white shadow-lg">` : `<div class="w-24 h-24 rounded-3xl bg-white text-[#0d4e46] flex items-center justify-center text-4xl shadow-lg font-bold border-4 border-gray-50">${w.name.charAt(0)}</div>`;
+            const role = window.appState.currentUser.systemRole;
+            const photo = w.photo ? `<img src="${w.photo}" class="w-20 h-20 md:w-28 md:h-28 rounded-2xl md:rounded-3xl object-cover shrink-0">` : `<div class="w-20 h-20 md:w-28 md:h-28 rounded-2xl md:rounded-3xl bg-gray-100 text-gray-400 font-bold text-3xl md:text-4xl flex items-center justify-center shrink-0">${window.getInitials(w.name)}</div>`;
             
             const canEdit = ['ADMIN', 'HR'].includes(role);
             const canGrade = ['ADMIN', 'HR', 'COORD'].includes(role);
             const isSelf = window.appState.currentUser.id === w.id;
 
-            // Calcular puntos
-            let totalPoints = 0;
-            let pointsListHtml = '';
-            window.appState.currentProfilePoints.forEach(p => {
-                totalPoints += (p.type === 'pos' ? p.amount : -p.amount);
-                const color = p.type === 'pos' ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50';
-                const sign = p.type === 'pos' ? '+' : '-';
-                pointsListHtml += `
-                    <div class="flex items-center justify-between p-3 border-b border-gray-50 last:border-0">
-                        <div>
-                            <p class="font-bold text-gray-800 text-sm">${p.reason}</p>
-                            <p class="text-xs text-gray-400">${new Date(p.timestamp).toLocaleDateString()} por ${p.evaluator}</p>
-                        </div>
-                        <span class="font-bold ${color} px-2 py-1 rounded-lg text-sm">${sign}${p.amount}</span>
-                    </div>`;
+            const monthStr = window.appState.selectedMonth; 
+            let monthPts = 0; let allPts = 0; let pList = '';
+            
+            const myPoints = window.appState.points.filter(p => p.workerId === w.id).sort((a,b) => b.timestamp - a.timestamp);
+            myPoints.forEach(p => {
+                const pAmt = p.type === 'pos' ? p.amount : -p.amount; allPts += pAmt;
+                const pMonth = `${new Date(p.timestamp).getFullYear()}-${String(new Date(p.timestamp).getMonth()+1).padStart(2,'0')}`;
+                if(pMonth === monthStr) monthPts += pAmt;
+                
+                const color = p.type === 'pos' ? 'text-green-600 bg-green-50' : 'text-red-500 bg-red-50';
+                pList += `<div class="flex items-center gap-3 py-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 px-2 rounded-lg transition-colors">
+                            <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-800 break-words">${p.reason}</p><p class="text-[11px] text-gray-400 truncate">${new Date(p.timestamp).toLocaleDateString()} por ${p.evaluator}</p></div>
+                            <span class="font-bold text-sm px-2 py-1 rounded-lg ${color} shrink-0">${p.type==='pos'?'+':'-'}${p.amount}</span>
+                          </div>`;
             });
-            if(pointsListHtml === '') pointsListHtml = '<p class="text-sm text-gray-400 italic py-4">No hay evaluaciones registradas.</p>';
 
-            // Lista Documentos
-            let docsListHtml = '';
+            let dList = '';
             window.appState.currentProfileDocs.forEach(d => {
-                docsListHtml += `
-                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-xl mb-2 border border-gray-100">
-                        <div class="flex items-center gap-3 overflow-hidden flex-1 min-w-0 pr-3">
-                            <i class="fas fa-file-pdf text-red-500 text-xl flex-shrink-0"></i>
-                            <div class="flex-1 min-w-0 truncate">
-                                <p class="font-bold text-gray-800 text-sm truncate">${d.name}</p>
-                                <p class="text-xs text-gray-400">${new Date(d.timestamp).toLocaleDateString()}</p>
+                dList += `<div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-3 border border-gray-100 hover:border-gray-200 transition-all">
+                            <i data-lucide="file-text" class="w-5 h-5 text-red-400 shrink-0"></i>
+                            <div class="flex-1 min-w-0"><p class="font-bold text-sm text-gray-700 truncate">${d.name}</p></div>
+                            <div class="flex gap-2 shrink-0">
+                                <a href="${d.file}" download="${d.name}.pdf" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#0f4e45] hover:bg-gray-100"><i data-lucide="download" class="w-4 h-4"></i></a>
+                                ${canEdit ? `<button onclick="deleteDocFile('${d.dbId}')" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-400 hover:bg-red-50"><i data-lucide="trash-2" class="w-4 h-4"></i></button>`:''}
                             </div>
-                        </div>
-                        <div class="flex gap-2 flex-shrink-0">
-                            <a href="${d.file}" download="${d.name}.pdf" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-[#146459] hover:bg-gray-100"><i class="fas fa-download"></i></a>
-                            ${canEdit ? `<button onclick="deleteDocFile('${d.dbId}')" class="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center text-red-400 hover:bg-red-50"><i class="fas fa-trash"></i></button>` : ''}
-                        </div>
-                    </div>`;
+                          </div>`;
             });
-            if(docsListHtml === '') docsListHtml = '<p class="text-sm text-gray-400 italic py-2">No hay documentos subidos.</p>';
 
             return `
-            <div class="p-4 md:p-10 max-w-4xl mx-auto">
-                ${!isSelf ? `<button onclick="setView('directory')" class="mb-6 text-gray-500 hover:text-[#0d4e46] font-bold flex items-center gap-2"><i class="fas fa-arrow-left"></i> Volver</button>` : ''}
-                
-                <div class="bg-[#0d4e46] rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden mb-6">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full -translate-y-1/2 translate-x-1/3"></div>
-                    <div class="relative z-10 flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
+            <div class="animate-in fade-in max-w-4xl mx-auto pb-6">
+                <div class="bg-white px-5 md:px-10 pt-8 pb-6 shadow-sm z-10 relative md:rounded-3xl md:mt-2">
+                    ${role !== 'WORKER' ? `<button onclick="setView('directory')" class="text-gray-400 hover:text-gray-600 mb-6 font-bold flex items-center gap-2 transition-colors"><i data-lucide="chevron-left" class="w-4 h-4"></i> Volver al Directorio</button>` : ''}
+                    <div class="flex items-start md:items-center gap-4 md:gap-6">
                         ${photo}
-                        <div class="flex-1 text-white mt-2">
-                            <h2 class="text-3xl font-black mb-1">${w.name}</h2>
-                            <p class="text-[#7be4af] font-medium text-lg mb-3">${w.role} | C.C. ${w.document}</p>
-                            ${w.availabilityText ? `<div class="inline-flex items-center gap-2 bg-black/20 px-4 py-1.5 rounded-full text-sm font-medium mt-1"><i class="fas fa-clock text-[#7be4af]"></i> Disp: ${w.availabilityText}</div>` : ''}
-                        </div>
-                        <div class="flex gap-3">
-                            ${(!isSelf && w.phone) ? `<a href="https://wa.me/57${w.phone}" target="_blank" class="bg-[#25D366] text-white w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg hover:scale-105 transition-all"><i class="fab fa-whatsapp"></i></a>` : ''}
-                            ${canEdit ? `<button onclick="openWorkerForm('${w.id}')" class="bg-white/20 text-white w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-lg hover:bg-white/30 transition-all"><i class="fas fa-pen"></i></button>` : ''}
+                        <div class="flex-1 min-w-0">
+                            <h2 class="text-2xl md:text-3xl font-black text-gray-900 leading-tight mb-1 truncate">${w.name}</h2>
+                            <p class="text-sm font-medium text-[#0f4e45] truncate">${w.role} | CC. ${w.document}</p>
+                            <div class="flex gap-2 mt-4 flex-wrap">
+                                ${(!isSelf && w.phone) ? `<button onclick="openWhatsApp('${w.phone}')" class="bg-[#25D366] text-white px-4 py-2 rounded-xl flex items-center justify-center shadow-sm text-sm font-bold hover:scale-105 transition-transform shrink-0"><i class="fab fa-whatsapp text-lg mr-2"></i> Mensaje</button>` : ''}
+                                ${canEdit ? `<button onclick="openWorkerForm('${w.id}')" class="bg-gray-100 text-gray-600 px-4 py-2 rounded-xl flex items-center justify-center shadow-sm text-sm font-bold hover:bg-gray-200 transition-colors shrink-0"><i data-lucide="edit-3" class="w-4 h-4 mr-2"></i> Editar</button>` : ''}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div class="flex border-b overflow-x-auto hide-scroll">
-                        <button onclick="switchTab('rendimiento')" id="tab-btn-rendimiento" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Rendimiento</button>
-                        <button onclick="switchTab('laboral')" id="tab-btn-laboral" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Laboral</button>
-                        <button onclick="switchTab('documentos')" id="tab-btn-documentos" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400">Documentos</button>
-                        ${canEdit ? `<button onclick="switchTab('banco')" id="tab-btn-banco" class="flex-1 min-w-[120px] py-4 font-bold text-center border-b-4 border-transparent text-gray-400"><i class="fas fa-lock text-xs mr-1"></i> Banco</button>` : ''}
-                    </div>
-                    
-                    <div class="p-6 min-h-[300px]">
-                        <!-- RENDIMIENTO -->
-                        <div id="tab-rendimiento" class="hidden">
-                            <div class="flex items-center justify-between mb-6 bg-gray-50 p-4 rounded-2xl border border-gray-100">
-                                <div><h3 class="text-xl font-black text-[#0d4e46]">Puntos Totales</h3><p class="text-xs text-gray-500">Historial acumulado</p></div>
-                                <div class="text-3xl font-black ${totalPoints >= 0 ? 'text-[#146459]' : 'text-red-500'}">${totalPoints}</div>
-                            </div>
-                            
-                            ${canGrade ? `
-                            <div class="bg-white border rounded-2xl p-4 mb-6 shadow-sm">
-                                <h4 class="text-sm font-bold text-gray-800 mb-3">Agregar Evaluación</h4>
-                                <div class="flex gap-2 mb-3">
-                                    <input type="number" id="pt-amount" placeholder="Puntos" class="w-24 p-2 border rounded-xl bg-gray-50 text-sm">
-                                    <select id="pt-type" class="p-2 border rounded-xl bg-gray-50 text-sm font-bold">
-                                        <option value="pos" class="text-green-600">Sumar (+)</option>
-                                        <option value="neg" class="text-red-600">Restar (-)</option>
+                <!-- TABS -->
+                <div class="flex bg-white px-2 md:px-8 border-b border-gray-200 overflow-x-auto hide-scroll md:rounded-3xl md:mt-4 md:shadow-sm">
+                    <button onclick="switchTab('rendimiento')" id="tab-btn-rendimiento" class="flex-shrink-0 px-5 py-4 text-xs font-bold text-[#0f4e45] border-b-[3px] border-[#0f4e45] transition-colors"><i class="fas fa-star mr-1"></i> Puntos</button>
+                    <button onclick="switchTab('laboral')" id="tab-btn-laboral" class="flex-shrink-0 px-5 py-4 text-xs font-bold text-gray-400 border-b-[3px] border-transparent hover:text-gray-600 transition-colors"><i class="fas fa-briefcase mr-1"></i> Datos</button>
+                    <button onclick="switchTab('documentos')" id="tab-btn-documentos" class="flex-shrink-0 px-5 py-4 text-xs font-bold text-gray-400 border-b-[3px] border-transparent hover:text-gray-600 transition-colors"><i class="fas fa-file-pdf mr-1"></i> Docs</button>
+                    ${canEdit ? `<button onclick="switchTab('banco')" id="tab-btn-banco" class="flex-shrink-0 px-5 py-4 text-xs font-bold text-gray-400 border-b-[3px] border-transparent hover:text-gray-600 transition-colors"><i class="fas fa-lock mr-1"></i> Banco</button>` : ''}
+                </div>
+
+                <div class="p-5 md:p-8 md:bg-white md:mt-4 md:rounded-3xl md:shadow-sm">
+                    <!-- PUNTOS -->
+                    <div id="tab-rendimiento" class="${window.appState.activeProfileTab === 'rendimiento' ? 'block' : 'hidden'} space-y-4">
+                        <div class="flex gap-3">
+                            <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100 flex-1"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Mes Actual</p><p class="text-2xl md:text-3xl font-black text-[#0f4e45] mt-1">${monthPts} <span class="text-sm">PTS</span></p></div>
+                            <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100 flex-1"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Histórico</p><p class="text-2xl md:text-3xl font-black text-gray-800 mt-1">${allPts} <span class="text-sm">PTS</span></p></div>
+                        </div>
+                        ${canGrade ? `
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100">
+                            <h4 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-2"><i data-lucide="plus-circle" class="w-4 h-4 text-[#7ce3af]"></i> Agregar Evaluación</h4>
+                            <div class="flex flex-col md:flex-row gap-2">
+                                <div class="flex gap-2 shrink-0">
+                                    <input type="number" id="pt-amount" placeholder="Pts" class="w-20 p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-bold focus:outline-none focus:border-[#7ce3af]">
+                                    <select id="pt-type" class="p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-black focus:outline-none focus:border-[#7ce3af]">
+                                        <option value="pos" class="text-green-600">+</option><option value="neg" class="text-red-600">-</option>
                                     </select>
                                 </div>
-                                <div class="flex gap-2">
-                                    <input type="text" id="pt-reason" placeholder="Motivo de la evaluación..." class="flex-1 p-2 border rounded-xl bg-gray-50 text-sm">
-                                    <button onclick="savePoint()" class="bg-[#0d4e46] text-white px-4 py-2 rounded-xl text-sm font-bold shadow-md hover:bg-[#146459]"><i class="fas fa-check"></i></button>
-                                </div>
-                            </div>` : ''}
-                            
-                            <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Historial</h4>
-                            <div class="border rounded-2xl overflow-hidden">${pointsListHtml}</div>
-                        </div>
-
-                        <!-- LABORAL -->
-                        <div id="tab-laboral" class="hidden space-y-4">
-                            <div><p class="text-xs text-gray-500 font-bold">Teléfono / Ciudad</p><p class="font-medium text-gray-800">${w.phone || '-'} | ${w.city || '-'}</p></div>
-                            <div><p class="text-xs text-gray-500 font-bold">Especialidades</p><p class="font-medium text-[#146459]">${w.specialties || 'No registradas'}</p></div>
-                            <div><p class="text-xs text-gray-500 font-bold">Días y Horarios Disponibles</p><p class="font-medium text-gray-800 bg-gray-50 p-3 rounded-xl border">${w.availabilityText || 'No especificado'}</p></div>
-                        </div>
-
-                        <!-- DOCUMENTOS -->
-                        <div id="tab-documentos" class="hidden">
-                            ${canEdit ? `
-                            <div class="bg-[#146459]/5 border border-[#146459]/20 p-4 rounded-2xl mb-6 flex items-center justify-between gap-4">
-                                <div><p class="font-bold text-[#0d4e46] text-sm">Subir Documento (PDF)</p><p class="text-xs text-gray-500">Max 1MB recomendado.</p></div>
-                                <label class="bg-[#146459] text-white px-4 py-2 rounded-xl text-sm font-bold cursor-pointer hover:bg-[#0d4e46] transition-all shadow-md flex-shrink-0">
-                                    <i class="fas fa-upload mr-1"></i> Seleccionar
-                                    <input type="file" accept="application/pdf" class="hidden" onchange="uploadDocument(event)">
-                                </label>
-                            </div>` : ''}
-                            <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Archivos Guardados</h4>
-                            <div>${docsListHtml}</div>
-                        </div>
-
-                        <!-- BANCO -->
-                        ${canEdit ? `
-                        <div id="tab-banco" class="hidden space-y-4">
-                            <div class="bg-orange-50 text-orange-800 p-3 rounded-xl text-sm font-medium mb-4"><i class="fas fa-shield-alt mr-2"></i> Información protegida por Firestore.</div>
-                            <div><p class="text-xs text-gray-500 font-bold">Banco / Tipo</p><p class="font-medium text-gray-800">${w.bankName || 'N/A'} - ${w.bankType || 'N/A'}</p></div>
-                            <div>
-                                <p class="text-xs text-gray-500 font-bold">Número de Cuenta</p>
-                                <div class="flex items-center gap-2">
-                                    <p class="font-bold text-lg text-[#0d4e46] bg-gray-50 px-3 py-1 rounded-lg border">${w.bankNumber || 'N/A'}</p>
-                                    ${w.bankNumber ? `<button onclick="copyToClipboard('${w.bankNumber}')" class="bg-[#7be4af] text-[#0d4e46] w-8 h-8 rounded-lg shadow-sm hover:scale-105"><i class="fas fa-copy"></i></button>` : ''}
-                                </div>
+                                <input type="text" id="pt-reason" placeholder="Motivo o labor..." class="flex-1 p-2.5 rounded-xl bg-gray-50 border border-gray-200 text-sm font-medium focus:outline-none focus:border-[#7ce3af]">
+                                <button onclick="savePoint()" class="bg-[#0f4e45] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:opacity-90 shrink-0 mt-2 md:mt-0">Guardar</button>
                             </div>
-                            <div><p class="text-xs text-gray-500 font-bold">Titular</p><p class="font-medium text-gray-800">${w.bankOwner || 'N/A'}</p></div>
                         </div>` : ''}
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100">
+                            <h4 class="text-sm font-bold text-gray-400 mb-2 uppercase tracking-wider">Historial</h4>
+                            ${pList || '<p class="text-sm text-gray-400 text-center py-4">No hay evaluaciones registradas</p>'}
+                        </div>
                     </div>
+
+                    <!-- DATOS LABORALES -->
+                    <div id="tab-laboral" class="${window.appState.activeProfileTab === 'laboral' ? 'block' : 'hidden'} space-y-3">
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">Contacto / Ciudad</p><p class="text-sm font-medium text-gray-800 break-words">${w.phone || '-'} | ${w.city || '-'}</p></div>
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">Especialidades</p><p class="text-sm font-medium text-[#0f4e45] break-words">${w.specialties || '-'}</p></div>
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">Días y Horarios Disponibles</p><p class="text-sm font-medium text-gray-800 break-words">${w.availabilityText || 'No especificada'}</p></div>
+                    </div>
+
+                    <!-- DOCUMENTOS -->
+                    <div id="tab-documentos" class="${window.appState.activeProfileTab === 'documentos' ? 'block' : 'hidden'}">
+                        ${canEdit ? `
+                        <div class="mb-4 text-right">
+                            <label class="bg-[#146459] text-white px-4 py-2.5 rounded-xl text-sm font-bold cursor-pointer inline-flex items-center gap-2 shadow-sm hover:opacity-90 transition-opacity">
+                                <i data-lucide="upload" class="w-4 h-4"></i> Subir PDF
+                                <input type="file" accept="application/pdf" class="hidden" onchange="uploadDocument(event)">
+                            </label>
+                        </div>` : ''}
+                        <div>${dList || '<p class="text-sm text-gray-400 text-center py-6">No hay documentos subidos</p>'}</div>
+                    </div>
+
+                    <!-- BANCO -->
+                    ${canEdit ? `
+                    <div id="tab-banco" class="${window.appState.activeProfileTab === 'banco' ? 'block' : 'hidden'} space-y-3">
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">Banco / Tipo</p><p class="text-sm font-medium text-gray-800 break-words">${w.bankName || '-'} / ${w.bankType || '-'}</p></div>
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100 flex items-center gap-3">
+                            <div class="flex-1 min-w-0"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">N° de Cuenta</p><p class="text-lg md:text-xl font-black text-[#0f4e45] truncate">${w.bankNumber || '-'}</p></div>
+                            ${w.bankNumber ? `<button onclick="copyToClipboard('${w.bankNumber}')" class="bg-gray-100 w-10 h-10 rounded-xl text-gray-500 hover:bg-gray-200 transition-colors shrink-0 flex items-center justify-center"><i data-lucide="copy" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                        <div class="bg-white md:bg-gray-50 p-4 rounded-2xl card-shadow md:shadow-none md:border md:border-gray-100"><p class="text-[10px] uppercase font-bold text-gray-400 mb-1 tracking-wide">Titular</p><p class="text-sm font-medium text-gray-800 break-words">${w.bankOwner || '-'}</p></div>
+                    </div>` : ''}
                 </div>
             </div>`;
         };
 
         window.switchTab = (tabId) => {
-            const tabs = ['rendimiento', 'laboral', 'documentos', 'banco'];
-            tabs.forEach(t => {
-                const content = document.getElementById(`tab-${t}`);
-                const btn = document.getElementById(`tab-btn-${t}`);
+            window.appState.activeProfileTab = tabId;
+            ['rendimiento', 'laboral', 'documentos', 'banco'].forEach(t => {
+                const content = document.getElementById(`tab-${t}`); const btn = document.getElementById(`tab-btn-${t}`);
                 if(content && btn) {
-                    if(t === tabId) {
-                        content.classList.remove('hidden'); content.classList.add('block');
-                        btn.classList.add('border-[#7be4af]', 'text-[#0d4e46]'); btn.classList.remove('border-transparent', 'text-gray-400');
-                    } else {
-                        content.classList.remove('block'); content.classList.add('hidden');
-                        btn.classList.remove('border-[#7be4af]', 'text-[#0d4e46]'); btn.classList.add('border-transparent', 'text-gray-400');
+                    if(t === tabId) { 
+                        content.classList.remove('hidden'); content.classList.add('block'); 
+                        btn.classList.add('text-[#0f4e45]', 'border-[#0f4e45]'); btn.classList.remove('text-gray-400', 'border-transparent'); 
+                    } else { 
+                        content.classList.remove('block'); content.classList.add('hidden'); 
+                        btn.classList.remove('text-[#0f4e45]', 'border-[#0f4e45]'); btn.classList.add('text-gray-400', 'border-transparent'); 
                     }
                 }
             });
         };
 
-        // ACCIONES DE PERFIL: PUNTOS Y DOCUMENTOS
+        window.openWhatsApp = (phone) => { window.open(`https://wa.me/57${phone}`, '_blank'); };
+
         window.savePoint = async () => {
             const amount = parseInt(document.getElementById('pt-amount').value);
             const type = document.getElementById('pt-type').value;
             const reason = document.getElementById('pt-reason').value.trim();
-
             if(!amount || !reason) return window.showToast('Ingresa cantidad y motivo', 'error');
-
-            const pointData = {
-                workerId: window.appState.selectedWorker.id,
-                amount: amount,
-                type: type,
-                reason: reason,
-                evaluator: window.appState.currentUser.name,
-                timestamp: Date.now()
-            };
-
-            try {
-                await addDoc(collection(db, "points"), pointData);
-                window.showToast('Evaluación guardada');
-                window.setView('profile'); // Recarga la vista para traer datos frescos
-            } catch (error) {
-                window.showToast('Error al guardar', 'error');
-            }
+            try { 
+                const newPoint = { workerId: window.appState.selectedWorker.id, amount, type, reason, evaluator: window.appState.currentUser.name, timestamp: Date.now() };
+                const docRef = await addDoc(collection(db, "points"), newPoint); 
+                window.appState.points.push({dbId: docRef.id, ...newPoint}); 
+                window.showToast('Evaluación guardada'); 
+                window.setView('profile'); 
+            } catch (e) { window.showToast('Error', 'error'); }
         };
 
         window.uploadDocument = (e) => {
             const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 1.2 * 1024 * 1024) return window.showToast('El PDF no debe exceder 1MB', 'error');
-
-            window.showToast('Subiendo documento...', 'success');
-            
+            if (!file || file.size > 1024 * 1024) return window.showToast('El PDF debe pesar máximo 1MB', 'error');
+            window.showToast('Subiendo documento...');
             const reader = new FileReader();
             reader.onload = async (ev) => {
-                const base64 = ev.target.result;
-                const docData = {
-                    workerId: window.appState.selectedWorker.id,
-                    name: file.name.replace('.pdf', ''),
-                    file: base64,
-                    timestamp: Date.now()
-                };
-                
-                try {
-                    await addDoc(collection(db, "documents"), docData);
-                    window.showToast('Documento guardado exitosamente');
-                    window.setView('profile');
-                } catch (error) {
-                    window.showToast('Error al subir', 'error');
-                }
-            };
-            reader.readAsDataURL(file);
+                try { 
+                    await addDoc(collection(db, "documents"), { workerId: window.appState.selectedWorker.id, name: file.name.replace('.pdf',''), file: ev.target.result, timestamp: Date.now() }); 
+                    window.showToast('Documento guardado'); 
+                    window.setView('profile'); 
+                } catch (er) { window.showToast('Error al subir', 'error'); }
+            }; reader.readAsDataURL(file);
         };
 
-        window.deleteDocFile = async (dbId) => {
-            if(!confirm('¿Eliminar este documento permanentemente?')) return;
-            try {
-                await deleteDoc(doc(db, "documents", dbId));
-                window.showToast('Documento eliminado');
-                window.setView('profile');
-            } catch (error) {
-                window.showToast('Error al eliminar', 'error');
-            }
+        window.deleteDocFile = async (id) => { 
+            if(!confirm('¿Eliminar este documento?')) return; 
+            await deleteDoc(doc(db, "documents", id)); 
+            window.setView('profile'); 
         };
 
-        // FORMULARIO TRABAJADOR
+        window.copyToClipboard = (txt) => { navigator.clipboard.writeText(txt); window.showToast('Cuenta copiada'); };
+
         window.openWorkerForm = (id = null) => {
-            const form = document.getElementById('worker-form');
-            form.reset();
-            document.getElementById('w-photo-preview').src = '';
-            document.getElementById('w-photo-preview').classList.add('hidden');
-            document.getElementById('w-photo-icon').classList.remove('hidden');
+            document.getElementById('worker-form').reset(); 
+            document.getElementById('w-photo-preview').classList.add('hidden'); 
+            document.getElementById('w-photo-icon').classList.remove('hidden'); 
             document.getElementById('w-photo-base64').value = '';
-
-            const canSeeBank = ['ADMIN', 'HR'].includes(window.appState.currentUser.role);
-            document.getElementById('bank-section-form').classList.toggle('hidden', !canSeeBank);
+            
+            const canSeeBank = ['ADMIN', 'HR'].includes(window.appState.currentUser.systemRole); 
+            document.getElementById('bank-section-form').style.display = canSeeBank ? 'block' : 'none';
 
             if (id) {
                 const w = window.appState.dbWorkers.find(x => x.id === id);
-                document.getElementById('worker-modal-title').innerText = 'Editar Trabajador';
-                document.getElementById('w-id').value = w.id;
-                document.getElementById('w-name').value = w.name;
-                document.getElementById('w-doc').value = w.document;
-                document.getElementById('w-phone').value = w.phone || '';
-                document.getElementById('w-city').value = w.city || '';
-                document.getElementById('w-role').value = w.role;
-                document.getElementById('w-status').value = w.status;
-                document.getElementById('w-availability').value = w.availabilityText || '';
+                document.getElementById('worker-modal-title').innerText = 'Editar Trabajador'; 
+                document.getElementById('w-id').value = w.id; 
+                document.getElementById('w-name').value = w.name; 
+                document.getElementById('w-doc').value = w.document; 
+                document.getElementById('w-phone').value = w.phone || ''; 
+                document.getElementById('w-city').value = w.city || ''; 
+                document.getElementById('w-role').value = w.role; 
+                document.getElementById('w-status').value = w.status; 
+                document.getElementById('w-availability').value = w.availabilityText || ''; 
                 document.getElementById('w-specs').value = w.specialties || '';
                 
-                if (w.photo) {
-                    document.getElementById('w-photo-base64').value = w.photo;
-                    document.getElementById('w-photo-preview').src = w.photo;
-                    document.getElementById('w-photo-preview').classList.remove('hidden');
+                if(w.photo){ 
+                    document.getElementById('w-photo-base64').value = w.photo; 
+                    document.getElementById('w-photo-preview').src = w.photo; 
+                    document.getElementById('w-photo-preview').classList.remove('hidden'); 
                     document.getElementById('w-photo-icon').classList.add('hidden');
                 }
-
-                if (canSeeBank) {
-                    document.getElementById('w-bank-name').value = w.bankName || '';
-                    document.getElementById('w-bank-type').value = w.bankType || 'Ahorros';
-                    document.getElementById('w-bank-num').value = w.bankNumber || '';
-                    document.getElementById('w-bank-owner').value = w.bankOwner || '';
+                
+                if(canSeeBank){ 
+                    document.getElementById('w-bank-name').value = w.bankName||''; 
+                    document.getElementById('w-bank-type').value = w.bankType||'Ahorros'; 
+                    document.getElementById('w-bank-num').value = w.bankNumber||''; 
+                    document.getElementById('w-bank-owner').value = w.bankOwner||'';
                 }
-            } else {
-                document.getElementById('worker-modal-title').innerText = 'Nuevo Trabajador';
-                document.getElementById('w-id').value = '';
+            } else { 
+                document.getElementById('worker-modal-title').innerText = 'Nuevo Trabajador'; 
+                document.getElementById('w-id').value = ''; 
             }
-            document.getElementById('worker-modal').classList.remove('hidden');
-            document.getElementById('worker-modal').classList.add('flex');
+            document.getElementById('worker-modal').classList.add('active');
         };
 
-        window.closeWorkerModal = () => {
-            document.getElementById('worker-modal').classList.add('hidden');
-            document.getElementById('worker-modal').classList.remove('flex');
+        window.closeWorkerModal = () => { document.getElementById('worker-modal').classList.remove('active'); };
+        
+        window.handlePhotoUpload = (e) => { 
+            const file = e.target.files[0]; 
+            if(file && file.size < 800000) { 
+                const reader = new FileReader(); 
+                reader.onload = (ev) => { 
+                    document.getElementById('w-photo-base64').value = ev.target.result; 
+                    document.getElementById('w-photo-preview').src = ev.target.result; 
+                    document.getElementById('w-photo-preview').classList.remove('hidden'); 
+                    document.getElementById('w-photo-icon').classList.add('hidden'); 
+                }; 
+                reader.readAsDataURL(file); 
+            } else {
+                window.showToast('La foto debe pesar máximo 800KB', 'error');
+            }
         };
 
-        window.handlePhotoUpload = (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 800 * 1024) return window.showToast('La foto debe pesar menos de 800KB para Firestore', 'error');
-            
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const base64 = ev.target.result;
-                document.getElementById('w-photo-base64').value = base64;
-                document.getElementById('w-photo-preview').src = base64;
-                document.getElementById('w-photo-preview').classList.remove('hidden');
-                document.getElementById('w-photo-icon').classList.add('hidden');
-            };
-            reader.readAsDataURL(file);
-        };
-
-        window.saveWorker = async () => {
-            const formId = document.getElementById('w-id').value;
+        window.saveWorker = async (e) => {
+            e.preventDefault();
+            const formId = document.getElementById('w-id').value; 
             const btn = document.getElementById('save-worker-btn');
             
-            const workerData = {
-                id: formId || 'w_' + Date.now(),
-                name: document.getElementById('w-name').value,
-                document: document.getElementById('w-doc').value,
-                phone: document.getElementById('w-phone').value,
-                city: document.getElementById('w-city').value,
-                role: document.getElementById('w-role').value,
-                status: document.getElementById('w-status').value,
-                availabilityText: document.getElementById('w-availability').value,
-                specialties: document.getElementById('w-specs').value,
-                photo: document.getElementById('w-photo-base64').value
+            const workerData = { 
+                id: formId || 'w_' + Date.now(), 
+                name: document.getElementById('w-name').value, 
+                document: document.getElementById('w-doc').value, 
+                phone: document.getElementById('w-phone').value, 
+                city: document.getElementById('w-city').value, 
+                role: document.getElementById('w-role').value, 
+                status: document.getElementById('w-status').value, 
+                availabilityText: document.getElementById('w-availability').value, 
+                specialties: document.getElementById('w-specs').value, 
+                photo: document.getElementById('w-photo-base64').value 
             };
+            
+            // Asignar systemRole según role seleccionado (para la navegación)
+            if(workerData.role === 'Administrador') workerData.systemRole = 'ADMIN';
+            else if(workerData.role === 'Recursos Humanos') workerData.systemRole = 'HR';
+            else if(workerData.role === 'Coordinador') workerData.systemRole = 'COORD';
+            else workerData.systemRole = 'WORKER';
 
-            if(!workerData.name || !workerData.document) return window.showToast('Nombre y documento requeridos', 'error');
-
-            if (['ADMIN', 'HR'].includes(window.appState.currentUser.role)) {
-                workerData.bankName = document.getElementById('w-bank-name').value;
-                workerData.bankType = document.getElementById('w-bank-type').value;
-                workerData.bankNumber = document.getElementById('w-bank-num').value;
-                workerData.bankOwner = document.getElementById('w-bank-owner').value;
-            } else if (formId) {
-                const oldData = window.appState.dbWorkers.find(w => w.id === formId);
-                if (oldData) {
-                    workerData.bankName = oldData.bankName;
-                    workerData.bankType = oldData.bankType;
-                    workerData.bankNumber = oldData.bankNumber;
-                    workerData.bankOwner = oldData.bankOwner;
-                }
+            if (['ADMIN', 'HR'].includes(window.appState.currentUser.systemRole)) { 
+                workerData.bankName = document.getElementById('w-bank-name').value; 
+                workerData.bankType = document.getElementById('w-bank-type').value; 
+                workerData.bankNumber = document.getElementById('w-bank-num').value; 
+                workerData.bankOwner = document.getElementById('w-bank-owner').value; 
+            } else if (formId) { 
+                const old = window.appState.dbWorkers.find(w => w.id === formId); 
+                if (old) { 
+                    workerData.bankName = old.bankName; 
+                    workerData.bankType = old.bankType; 
+                    workerData.bankNumber = old.bankNumber; 
+                    workerData.bankOwner = old.bankOwner; 
+                } 
             }
-
-            btn.disabled = true;
-            btn.innerText = 'Guardando...';
-
-            try {
-                await setDoc(doc(db, "workers", workerData.id), workerData);
-                const index = window.appState.dbWorkers.findIndex(w => w.id === workerData.id);
-                if(index >= 0) window.appState.dbWorkers[index] = workerData;
-                else window.appState.dbWorkers.push(workerData);
-
-                if(window.appState.selectedWorker && window.appState.selectedWorker.id === formId) {
-                    window.appState.selectedWorker = workerData;
-                }
-
-                window.closeWorkerModal();
-                window.showToast('Trabajador guardado con éxito');
-                
-                if (window.appState.currentView === 'directory') window.setView('directory');
-                if (window.appState.currentView === 'profile') window.setView('profile');
-            } catch (error) {
-                window.showToast('Error al guardar en Firebase', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerText = 'Guardar';
-            }
-        };
-
-        // UTILIDADES
-        window.copyToClipboard = (text) => {
-            navigator.clipboard.writeText(text).then(() => {
-                window.showToast('Copiado al portapapeles');
-            });
-        };
-
-        window.showToast = (msg, type = 'success') => {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-message').innerText = msg;
-            const icon = document.getElementById('toast-icon');
-            icon.className = type === 'success' ? 'fas fa-check-circle text-[#7be4af]' : 'fas fa-exclamation-circle text-red-400';
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
+            
+            btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin mx-auto"></i>'; lucide.createIcons();
+            
+            try { 
+                await setDoc(doc(db, "workers", workerData.id), workerData); 
+                window.closeWorkerModal(); 
+                window.showToast('Trabajador guardado con éxito'); 
+                await fetchAllData(); 
+                if(window.appState.currentView === 'directory') window.setView('directory'); 
+                if(window.appState.currentView === 'profile') window.setView('profile'); 
+            } catch(e) { window.showToast('Error al guardar', 'error'); } 
+            finally { btn.disabled = false; btn.innerText = 'Guardar'; }
         };
     </script>
 </body>
